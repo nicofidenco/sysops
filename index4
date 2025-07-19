@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive AWS SysOps Quiz</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .quiz-option label {
+            transition: all 0.2s ease-in-out;
+        }
+        .quiz-option label:hover {
+            background-color: #f0f4f8;
+            border-color: #a5b4fc;
+        }
+        .correct-answer {
+             background-color: #dcfce7 !important;
+             border-color: #22c55e !important;
+        }
+        .incorrect-answer {
+             background-color: #fee2e2 !important;
+             border-color: #ef4444 !important;
+        }
+        .explanation-box {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.7s ease-in-out, padding 0.7s ease-in-out, margin 0.7s ease-in-out;
+            padding: 0 1.5rem;
+        }
+        .explanation-box.visible {
+            max-height: 1000px; /* Increased to accommodate more text */
+            padding: 1.5rem;
+            margin-top: 1rem;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 text-gray-800">
+
+    <div id="quiz-container" class="max-w-4xl mx-auto p-4 sm:p-6 md:p-8">
+        <header class="mb-8 text-center sticky top-0 bg-gray-100/80 backdrop-blur-sm py-4 z-10">
+            <h1 class="text-3xl sm:text-4xl font-bold text-gray-900">Interactive AWS SysOps Quiz</h1>
+            <p class="mt-2 text-md text-gray-600">Select an answer to see the explanation. You can change your answers.</p>
+            <div id="score-container" class="mt-4 text-2xl font-bold text-gray-700">
+                Score: <span id="current-score">0</span> / <span id="total-questions">0</span>
+            </div>
+        </header>
+
+        <div id="quiz-content" class="space-y-8">
+            <!-- Questions will be dynamically inserted here -->
+        </div>
+        
+        <div class="mt-10 text-center">
+            <button id="restart-btn" class="bg-blue-600 text-white font-bold py-3 px-8 rounded-lg shadow-md hover:bg-blue-700 transition-transform transform hover:scale-105 focus:outline-none focus:ring-4 focus:ring-blue-300">
+                Reset Quiz
+            </button>
+        </div>
+
+    </div>
+
+    <script>
+        const quizData = [
+            {
+                question: "A company needs to centrally manage backups and automate backup policies for various AWS services like Amazon EBS, Amazon RDS, and Amazon EFS across multiple accounts. Which service should be used?",
+                options: {
+                    A: "AWS Backup",
+                    B: "Amazon Data Lifecycle Manager",
+                    C: "AWS Storage Gateway",
+                    D: "AWS CloudFormation"
+                },
+                answer: "A",
+                explanation: "AWS Backup is a fully managed backup service that makes it easy to centralize and automate the back up of data across AWS services in the cloud as well as on premises. It supports the specified services and can manage backups across accounts using AWS Organizations.",
+                wrongExplanation: "<b>B:</b> Amazon DLM is primarily for automating the creation, retention, and deletion of EBS snapshots and AMIs. It is not a centralized solution for multiple service types like RDS or EFS. <br><b>C:</b> Storage Gateway connects on-premises environments to AWS storage; it's not a backup management service for AWS resources. <br><b>D:</b> CloudFormation is for infrastructure as code, not for managing backup operations."
+            },
+            {
+                question: "A web application is deployed behind an Application Load Balancer (ALB). The SysOps team wants to ensure that users can only access the application through the ALB, not by using the direct IP addresses of the EC2 instances. How can this be enforced?",
+                options: {
+                    A: "Configure the EC2 instance security groups to only allow traffic from the ALB's security group.",
+                    B: "Configure the Network ACLs to deny all traffic except from the ALB's IP addresses.",
+                    C: "Remove the public IP addresses from the EC2 instances.",
+                    D: "Use AWS WAF to block requests that do not come from the ALB."
+                },
+                answer: "A",
+                explanation: "This is a standard security pattern. By creating a security group for the ALB and another for the EC2 instances, you can configure the instances' security group to only accept inbound traffic from the ALB's security group. This effectively creates a firewall rule that allows the ALB to talk to the instances but prevents any other direct access from the internet.",
+                wrongExplanation: "<b>B:</b> Using Network ACLs is less precise and harder to manage, as ALB IP addresses can change. Security group references are dynamic and recommended. <br><b>C:</b> While placing instances in a private subnet (and thus removing public IPs) is part of a secure architecture, the security group rule is what directly enforces the traffic flow from the ALB. <br><b>D:</b> AWS WAF is a web application firewall used to protect against common web exploits; it's not the primary tool for controlling network traffic flow between AWS resources."
+            },
+            {
+                question: "A SysOps administrator needs to retrieve a custom metric from a fleet of EC2 instances, such as memory utilization. What is the standard process to get this metric into Amazon CloudWatch?",
+                options: {
+                    A: "The metric is collected automatically by CloudWatch basic monitoring.",
+                    B: "Install and configure the unified CloudWatch agent on the instances to publish the custom metric.",
+                    C: "Use AWS Systems Manager Run Command to fetch the metric data periodically.",
+                    D: "Enable detailed monitoring for the EC2 instances."
+                },
+                answer: "B",
+                explanation: "Standard EC2 metrics provided by CloudWatch do not include memory utilization or disk space usage. To collect these and other custom metrics, you must install the unified CloudWatch agent on the EC2 instances. The agent's configuration file can be set up to collect specific system-level metrics and publish them to CloudWatch as custom metrics.",
+                wrongExplanation: "<b>A & D:</b> Basic and detailed monitoring for EC2 only cover metrics from the hypervisor level, such as CPU Utilization, Network I/O, and Disk I/O. They do not have visibility into the instance's operating system, like memory usage. <br><b>C:</b> Run Command is for executing commands, not for setting up a continuous metric collection pipeline."
+            },
+            {
+                question: "An application's performance is suffering, and analysis shows that the attached General Purpose SSD (gp2) EBS volume is frequently hitting its IOPS limit, causing high latency. What is the MOST operationally efficient way to resolve this with no downtime?",
+                options: {
+                    A: "Take a snapshot of the volume, create a new Provisioned IOPS volume from the snapshot, and attach it to the instance.",
+                    B: "Stop the instance, detach the gp2 volume, and attach a new, larger gp2 volume.",
+                    C: "Modify the existing EBS volume to increase its size or change its type to Provisioned IOPS (io1/io2).",
+                    D: "Add a second gp2 volume and configure the application to use both."
+                },
+                answer: "C",
+                explanation: "Amazon EBS provides the ability to modify a volume's size, type, and IOPS on the fly without detaching it or stopping the instance. This is the most operationally efficient solution as it can be done with a simple API call or a few clicks in the console and does not cause any downtime for the application.",
+                wrongExplanation: "<b>A & B:</b> These options both involve detaching the volume or stopping the instance, which would cause significant downtime. <br><b>D:</b> This would require significant application-level changes to stripe data across two volumes and is much more complex than simply modifying the existing volume."
+            },
+            {
+                question: "A SysOps administrator needs to be notified via email if the root user of an AWS account is used to log in to the console. Which solution will meet this requirement?",
+                options: {
+                    A: "Create a CloudWatch alarm based on the `RootUserLogin` metric.",
+                    B: "Configure AWS Trusted Advisor to send an alert.",
+                    C: "Create an Amazon EventBridge rule that listens for the `ConsoleLogin` event where the user identity is 'root', and targets an SNS topic.",
+                    D: "Analyze AWS CloudTrail logs daily with a Lambda function."
+                },
+                answer: "C",
+                explanation: "This is the standard, event-driven approach. AWS CloudTrail captures the `ConsoleLogin` event. You can create a specific Amazon EventBridge (formerly CloudWatch Events) rule with an event pattern that matches this event and filters for cases where the `userIdentity.type` is `Root`. The rule's target can then be an SNS topic with an email subscription to send the notification immediately.",
+                wrongExplanation: "<b>A:</b> There is no specific CloudWatch metric for root user logins. <br><b>B:</b> Trusted Advisor checks for security best practices but does not provide real-time event-based alerting for specific actions like this. <br><b>D:</b> A daily Lambda function is not a real-time solution and is more complex to set up than a direct EventBridge rule."
+            },
+            {
+                question: "A company is deploying a critical application that requires a static, public IP address that can be moved from one EC2 instance to another in case of failure. Which AWS resource should be used?",
+                options: {
+                    A: "A public IP address assigned at instance launch.",
+                    B: "An Elastic IP address.",
+                    C: "An IP address from an AWS Global Accelerator.",
+                    D: "An Amazon Route 53 A record."
+                },
+                answer: "B",
+                explanation: "An Elastic IP address is a static, public IPv4 address designed for dynamic cloud computing. You can associate it with any EC2 instance or network interface in your account. If an instance fails, you can quickly remap the Elastic IP address to a standby instance, ensuring the public endpoint for your application remains the same.",
+                wrongExplanation: "<b>A:</b> A standard public IP address is tied to the lifecycle of the instance; it cannot be moved to another instance. <br><b>C:</b> Global Accelerator provides static anycast IP addresses that act as a fixed entry point to your application endpoints, but for a simple single-region failover, an Elastic IP is the more direct and common solution. <br><b>D:</b> A Route 53 record points a domain name to an IP address; it is not the IP address itself."
+            }
+        ];
+
+        const quizContent = document.getElementById('quiz-content');
+        const currentScoreEl = document.getElementById('current-score');
+        const totalQuestionsEl = document.getElementById('total-questions');
+        const restartBtn = document.getElementById('restart-btn');
+        
+        let questions = [];
+
+        function buildQuiz() {
+            quizContent.innerHTML = '';
+            totalQuestionsEl.textContent = quizData.length;
+            updateGlobalScore();
+
+            questions = [...quizData].sort(() => Math.random() - 0.5);
+
+            questions.forEach((currentQuestion, questionNumber) => {
+                const options = [];
+                for (let letter in currentQuestion.options) {
+                    options.push(
+                        `<div class="quiz-option">
+                            <label class="block w-full p-4 border-2 border-gray-300 rounded-lg cursor-pointer">
+                                <input type="radio" name="question${questionNumber}" value="${letter}" class="mr-3 align-middle">
+                                <span class="font-bold mr-1">${letter}.</span>
+                                <span class="align-middle">${currentQuestion.options[letter]}</span>
+                            </label>
+                        </div>`
+                    );
+                }
+
+                const questionEl = document.createElement('div');
+                questionEl.classList.add('bg-white', 'p-6', 'rounded-xl', 'shadow-sm', 'question-card');
+                questionEl.dataset.questionIndex = questionNumber;
+
+                questionEl.innerHTML = `
+                    <div class="font-semibold text-lg mb-4">
+                        <span class="font-bold text-blue-600">Question ${questionNumber + 1}:</span>
+                        ${currentQuestion.question}
+                    </div>
+                    <div class="space-y-3 option-group">${options.join('')}</div>
+                    <div class="explanation-box bg-gray-50 rounded-lg">
+                         <div class="p-6">
+                             <div class="explanation-correct"></div>
+                             <div class="explanation-wrong mt-4"></div>
+                         </div>
+                    </div>
+                `;
+                
+                quizContent.appendChild(questionEl);
+            });
+            
+            document.querySelectorAll('.option-group input[type="radio"]').forEach(input => {
+                input.addEventListener('change', handleAnswerSelection);
+            });
+        }
+        
+        function handleAnswerSelection(event) {
+            const selectedInput = event.target;
+            const questionCard = selectedInput.closest('.question-card');
+            const optionGroup = selectedInput.closest('.option-group');
+            
+            const questionIndex = parseInt(questionCard.dataset.questionIndex);
+            const currentQuestion = questions[questionIndex];
+            const userAnswer = selectedInput.value;
+            
+            // Clear previous feedback from all labels in this group
+            optionGroup.querySelectorAll('label').forEach(label => {
+                label.classList.remove('correct-answer', 'incorrect-answer');
+            });
+
+            const selectedLabel = selectedInput.parentElement;
+            const correctLabel = optionGroup.querySelector(`input[value="${currentQuestion.answer}"]`).parentElement;
+
+            // Apply new feedback
+            if (userAnswer === currentQuestion.answer) {
+                selectedLabel.classList.add('correct-answer');
+            } else {
+                selectedLabel.classList.add('incorrect-answer');
+                correctLabel.classList.add('correct-answer');
+            }
+            
+            // Manage explanations
+            const explanationBox = questionCard.querySelector('.explanation-box');
+            const correctExplanationDiv = explanationBox.querySelector('.explanation-correct');
+            const wrongExplanationDiv = explanationBox.querySelector('.explanation-wrong');
+            
+            correctExplanationDiv.innerHTML = `<h4 class="font-bold mb-2 text-gray-800">Explanation:</h4><p class="text-gray-700">${currentQuestion.explanation}</p>`;
+            
+            if (userAnswer !== currentQuestion.answer) {
+                 wrongExplanationDiv.innerHTML = `<h4 class="font-bold mb-2 text-red-700">Why the other options are wrong:</h4><p class="text-gray-700">${currentQuestion.wrongExplanation}</p>`;
+            } else {
+                wrongExplanationDiv.innerHTML = '';
+            }
+
+            explanationBox.classList.add('visible');
+            updateGlobalScore();
+        }
+
+        function updateGlobalScore() {
+            let score = 0;
+            document.querySelectorAll('.question-card').forEach((card, index) => {
+                const selectedInput = card.querySelector('input[type="radio"]:checked');
+                if (selectedInput) {
+                    const questionData = questions[index];
+                    if (selectedInput.value === questionData.answer) {
+                        score++;
+                    }
+                }
+            });
+            currentScoreEl.textContent = score;
+        }
+
+        restartBtn.addEventListener('click', () => {
+             // Scroll to top for a better reset experience
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            // A brief delay to allow scroll to start before rebuilding
+            setTimeout(buildQuiz, 100);
+        });
+        
+        buildQuiz();
+    </script>
+</body>
+</html>
