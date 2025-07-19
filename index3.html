@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive AWS SysOps Quiz</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .quiz-option label {
+            transition: all 0.2s ease-in-out;
+        }
+        .quiz-option label:hover {
+            background-color: #f0f4f8;
+            border-color: #a5b4fc;
+        }
+        .correct-answer {
+             background-color: #dcfce7 !important;
+             border-color: #22c55e !important;
+        }
+        .incorrect-answer {
+             background-color: #fee2e2 !important;
+             border-color: #ef4444 !important;
+        }
+        .explanation-box {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.7s ease-in-out, padding 0.7s ease-in-out, margin 0.7s ease-in-out;
+            padding: 0 1.5rem;
+        }
+        .explanation-box.visible {
+            max-height: 1000px; /* Increased to accommodate more text */
+            padding: 1.5rem;
+            margin-top: 1rem;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 text-gray-800">
+
+    <div id="quiz-container" class="max-w-4xl mx-auto p-4 sm:p-6 md:p-8">
+        <header class="mb-8 text-center sticky top-0 bg-gray-100/80 backdrop-blur-sm py-4 z-10">
+            <h1 class="text-3xl sm:text-4xl font-bold text-gray-900">Interactive AWS SysOps Quiz</h1>
+            <p class="mt-2 text-md text-gray-600">Select an answer to see the explanation. You can change your answers.</p>
+            <div id="score-container" class="mt-4 text-2xl font-bold text-gray-700">
+                Score: <span id="current-score">0</span> / <span id="total-questions">0</span>
+            </div>
+        </header>
+
+        <div id="quiz-content" class="space-y-8">
+            <!-- Questions will be dynamically inserted here -->
+        </div>
+        
+        <div class="mt-10 text-center">
+            <button id="restart-btn" class="bg-blue-600 text-white font-bold py-3 px-8 rounded-lg shadow-md hover:bg-blue-700 transition-transform transform hover:scale-105 focus:outline-none focus:ring-4 focus:ring-blue-300">
+                Reset Quiz
+            </button>
+        </div>
+
+    </div>
+
+    <script>
+        const quizData = [
+            {
+                question: "A company needs to ensure that all data stored in an S3 bucket is encrypted at rest. What is the easiest way to enforce this for all new objects?",
+                options: {
+                    A: "Enable default encryption on the S3 bucket.",
+                    B: "Write a bucket policy that denies uploads without the `x-amz-server-side-encryption` header.",
+                    C: "Use AWS Macie to classify and encrypt data.",
+                    D: "Manually encrypt each object before uploading it."
+                },
+                answer: "A",
+                explanation: "Enabling default encryption on an S3 bucket is the most straightforward and operationally efficient way to ensure all new objects are automatically encrypted at rest without requiring any changes on the client side. AWS handles the encryption seamlessly as objects are written.",
+                wrongExplanation: "<b>B:</b> This is a valid but more complex way to enforce encryption. It requires clients to add a specific header to every upload request. Default encryption is simpler. <br><b>C:</b> AWS Macie is a data security service that discovers and protects sensitive data; it doesn't enforce encryption on all new objects. <br><b>D:</b> This is operationally burdensome and prone to human error."
+            },
+            {
+                question: "A SysOps administrator is configuring a CloudWatch alarm for an EC2 instance. The alarm should trigger if the CPU utilization is above 70% for 15 consecutive minutes. The metric is being collected every 5 minutes. How should the alarm be configured?",
+                options: {
+                    A: "Set Period to 1 minute and Evaluation Periods to 15.",
+                    B: "Set Period to 5 minutes and Evaluation Periods to 3.",
+                    C: "Set Period to 15 minutes and Evaluation Periods to 1.",
+                    D: "Set Period to 3 minutes and Evaluation Periods to 5."
+                },
+                answer: "B",
+                explanation: "The total duration for an alarm to trigger is the `Period` multiplied by the `Evaluation Periods`. The requirement is for 15 consecutive minutes, and the data points are available every 5 minutes. Therefore, setting a Period of 5 minutes and checking 3 consecutive evaluation periods (5 minutes * 3 = 15 minutes) correctly implements the requirement.",
+                wrongExplanation: "<b>A:</b> This would evaluate 15 one-minute periods, which is not what's required and might not work if data points are only available every 5 minutes. <br><b>C:</b> This would only check a single 15-minute data point, not 15 *consecutive* minutes of high utilization. <br><b>D:</b> The period must match the metric's emission interval (5 minutes) for accurate evaluation."
+            },
+            {
+                question: "An application writes logs to a custom log file on an EC2 instance. A SysOps administrator needs to collect these logs and search them for errors in near-real time. Which solution meets these requirements?",
+                options: {
+                    A: "Install the CloudWatch agent on the EC2 instance and configure it to stream the log file to CloudWatch Logs.",
+                    B: "Write a cron job to periodically copy the log file to an S3 bucket.",
+                    C: "Use AWS Systems Manager Run Command to retrieve the log file content on demand.",
+                    D: "Enable VPC Flow Logs for the instance's ENI."
+                },
+                answer: "A",
+                explanation: "The CloudWatch agent is designed specifically for this purpose. It can be configured to monitor specified log files on an EC2 instance and stream the log data in near-real time to CloudWatch Logs. Once in CloudWatch Logs, the data can be searched, filtered, and used to create alarms or metrics.",
+                wrongExplanation: "<b>B:</b> This is not near-real time and is inefficient for searching. <br><b>C:</b> This is a manual, on-demand process, not a continuous collection solution. <br><b>D:</b> VPC Flow Logs capture IP traffic information, not application log content from a file."
+            },
+            {
+                question: "A company has a fleet of EC2 instances that need access to an Amazon S3 bucket. According to security best practices, how should the administrator provide these permissions?",
+                options: {
+                    A: "Create an IAM user with an access key and secret key and store them in a file on each instance.",
+                    B: "Create an IAM role with the necessary S3 permissions and attach it to the EC2 instances.",
+                    C: "Hardcode the access key and secret key of an administrative user directly into the application code.",
+                    D: "Configure the S3 bucket to be publicly accessible."
+                },
+                answer: "B",
+                explanation: "Using IAM roles for EC2 instances is the most secure and recommended method. The role provides temporary credentials that are automatically rotated and managed by AWS. This avoids the risk of storing long-lived access keys on the instances, which could be compromised.",
+                wrongExplanation: "<b>A & C:</b> Storing or hardcoding long-lived credentials is a major security risk. If an instance is compromised, the keys can be stolen. <br><b>D:</b> Making the bucket public is extremely insecure and should be avoided unless the data is explicitly intended for public consumption."
+            },
+            {
+                question: "A SysOps administrator notices that an Amazon RDS for PostgreSQL database is performing poorly due to a high number of read queries. The application cannot be changed. What is the MOST effective solution to improve performance?",
+                options: {
+                    A: "Increase the size of the RDS instance (vertical scaling).",
+                    B: "Enable Multi-AZ for the RDS instance.",
+                    C: "Create a read replica for the RDS instance and direct read traffic to it.",
+                    D: "Migrate the database to Amazon DynamoDB."
+                },
+                answer: "C",
+                explanation: "The problem is a high volume of read queries. An RDS Read Replica is a separate, asynchronously replicated copy of the primary database designed specifically to handle read traffic. By creating a read replica, you can offload the read queries from the primary instance, freeing it up to handle write operations and improving overall performance. An Application Load Balancer or application logic would be needed to route the traffic.",
+                wrongExplanation: "<b>A:</b> While increasing the instance size might help temporarily, it's often not the most cost-effective or scalable solution for read-heavy workloads. <br><b>B:</b> Multi-AZ is for high availability and disaster recovery, not for performance scaling. The standby replica does not serve read traffic. <br><b>D:</b> Migrating to DynamoDB is a massive undertaking and not a simple solution for read-heavy SQL workloads."
+            },
+            {
+                question: "A company needs to track all API calls made to its AWS account for security and compliance audits. The records must be stored durably for several years. Which service should be used?",
+                options: {
+                    A: "Amazon CloudWatch",
+                    B: "AWS CloudTrail",
+                    C: "VPC Flow Logs",
+                    D: "AWS X-Ray"
+                },
+                answer: "B",
+                explanation: "AWS CloudTrail is the service that provides event history of your AWS account activity, including actions taken through the AWS Management Console, AWS SDKs, command line tools, and other AWS services. You can configure a trail to deliver these log files to an S3 bucket for long-term, durable storage and analysis.",
+                wrongExplanation: "<b>A:</b> CloudWatch is for monitoring performance metrics and logs from applications and resources, not for auditing account-level API calls. <br><b>C:</b> VPC Flow Logs capture IP traffic information for a VPC, not API activity. <br><b>D:</b> AWS X-Ray is for analyzing and debugging distributed applications, not for auditing API calls."
+            },
+            {
+                question: "A SysOps administrator needs to create a snapshot of an EBS volume that is attached to a running EC2 instance. What is the recommended practice to ensure a consistent snapshot?",
+                options: {
+                    A: "Detach the volume, create the snapshot, and then reattach the volume.",
+                    B: "Stop the instance before taking the snapshot.",
+                    C: "No special action is needed; snapshots are always consistent.",
+                    D: "Increase the IOPS of the volume before taking the snapshot."
+                },
+                answer: "B",
+                explanation: "While you can take a snapshot of an attached volume that is in use, the most reliable way to ensure a completely consistent snapshot at a specific point in time is to stop the instance. This flushes all cached data from the operating system to the EBS volume, ensuring that the snapshot captures a clean and consistent state of the filesystem.",
+                wrongExplanation: "<b>A:</b> Detaching and reattaching the volume would cause significant application downtime and is more disruptive than stopping the instance. <br><b>C:</b> Snapshots are crash-consistent by default, but for applications that cache data heavily (like databases), this may not be sufficient for a clean restore. <br><b>D:</b> Changing IOPS is related to performance, not snapshot consistency."
+            },
+            {
+                question: "An organization wants to simplify cost allocation and management for different departments (e.g., Marketing, Engineering). What is the MOST effective way to categorize and track costs by department?",
+                options: {
+                    A: "Use a separate AWS account for each department.",
+                    B: "Apply cost allocation tags to all resources.",
+                    C: "Analyze logs with Amazon Athena.",
+                    D: "Create a separate VPC for each department."
+                },
+                answer: "B",
+                explanation: "Cost allocation tags are key-value pairs that you can apply to AWS resources. After you activate these tags in the Billing and Cost Management console, AWS uses them to organize your resource costs on your cost allocation report. This makes it easier to categorize and track your AWS costs, which is exactly what's needed to separate costs by department.",
+                wrongExplanation: "<b>A:</b> While effective, using separate accounts can be operationally complex to manage if not done within an AWS Organization. Tagging is often a more flexible starting point. <br><b>C:</b> Athena is for querying data, not for the primary mechanism of cost categorization. <br><b>D:</b> VPCs are for network isolation and do not directly correlate with cost tracking in billing reports."
+            }
+        ];
+
+        const quizContent = document.getElementById('quiz-content');
+        const currentScoreEl = document.getElementById('current-score');
+        const totalQuestionsEl = document.getElementById('total-questions');
+        const restartBtn = document.getElementById('restart-btn');
+        
+        let questions = [];
+
+        function buildQuiz() {
+            quizContent.innerHTML = '';
+            totalQuestionsEl.textContent = quizData.length;
+            updateGlobalScore();
+
+            questions = [...quizData].sort(() => Math.random() - 0.5);
+
+            questions.forEach((currentQuestion, questionNumber) => {
+                const options = [];
+                for (let letter in currentQuestion.options) {
+                    options.push(
+                        `<div class="quiz-option">
+                            <label class="block w-full p-4 border-2 border-gray-300 rounded-lg cursor-pointer">
+                                <input type="radio" name="question${questionNumber}" value="${letter}" class="mr-3 align-middle">
+                                <span class="font-bold mr-1">${letter}.</span>
+                                <span class="align-middle">${currentQuestion.options[letter]}</span>
+                            </label>
+                        </div>`
+                    );
+                }
+
+                const questionEl = document.createElement('div');
+                questionEl.classList.add('bg-white', 'p-6', 'rounded-xl', 'shadow-sm', 'question-card');
+                questionEl.dataset.questionIndex = questionNumber;
+
+                questionEl.innerHTML = `
+                    <div class="font-semibold text-lg mb-4">
+                        <span class="font-bold text-blue-600">Question ${questionNumber + 27}:</span>
+                        ${currentQuestion.question}
+                    </div>
+                    <div class="space-y-3 option-group">${options.join('')}</div>
+                    <div class="explanation-box bg-gray-50 rounded-lg">
+                         <div class="p-6">
+                             <div class="explanation-correct"></div>
+                             <div class="explanation-wrong mt-4"></div>
+                         </div>
+                    </div>
+                `;
+                
+                quizContent.appendChild(questionEl);
+            });
+            
+            document.querySelectorAll('.option-group input[type="radio"]').forEach(input => {
+                input.addEventListener('change', handleAnswerSelection);
+            });
+        }
+        
+        function handleAnswerSelection(event) {
+            const selectedInput = event.target;
+            const questionCard = selectedInput.closest('.question-card');
+            const optionGroup = selectedInput.closest('.option-group');
+            
+            const questionIndex = parseInt(questionCard.dataset.questionIndex);
+            const currentQuestion = questions[questionIndex];
+            const userAnswer = selectedInput.value;
+            
+            // Clear previous feedback from all labels in this group
+            optionGroup.querySelectorAll('label').forEach(label => {
+                label.classList.remove('correct-answer', 'incorrect-answer');
+            });
+
+            const selectedLabel = selectedInput.parentElement;
+            const correctLabel = optionGroup.querySelector(`input[value="${currentQuestion.answer}"]`).parentElement;
+
+            // Apply new feedback
+            if (userAnswer === currentQuestion.answer) {
+                selectedLabel.classList.add('correct-answer');
+            } else {
+                selectedLabel.classList.add('incorrect-answer');
+                correctLabel.classList.add('correct-answer');
+            }
+            
+            // Manage explanations
+            const explanationBox = questionCard.querySelector('.explanation-box');
+            const correctExplanationDiv = explanationBox.querySelector('.explanation-correct');
+            const wrongExplanationDiv = explanationBox.querySelector('.explanation-wrong');
+            
+            correctExplanationDiv.innerHTML = `<h4 class="font-bold mb-2 text-gray-800">Explanation:</h4><p class="text-gray-700">${currentQuestion.explanation}</p>`;
+            
+            if (userAnswer !== currentQuestion.answer) {
+                 wrongExplanationDiv.innerHTML = `<h4 class="font-bold mb-2 text-red-700">Why the other options are wrong:</h4><p class="text-gray-700">${currentQuestion.wrongExplanation}</p>`;
+            } else {
+                wrongExplanationDiv.innerHTML = '';
+            }
+
+            explanationBox.classList.add('visible');
+            updateGlobalScore();
+        }
+
+        function updateGlobalScore() {
+            let score = 0;
+            document.querySelectorAll('.question-card').forEach((card, index) => {
+                const selectedInput = card.querySelector('input[type="radio"]:checked');
+                if (selectedInput) {
+                    const questionData = questions[index];
+                    if (selectedInput.value === questionData.answer) {
+                        score++;
+                    }
+                }
+            });
+            currentScoreEl.textContent = score;
+        }
+
+        restartBtn.addEventListener('click', () => {
+             // Scroll to top for a better reset experience
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            // A brief delay to allow scroll to start before rebuilding
+            setTimeout(buildQuiz, 100);
+        });
+        
+        buildQuiz();
+    </script>
+</body>
+</html>
