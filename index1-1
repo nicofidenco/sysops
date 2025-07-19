@@ -1,0 +1,502 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive AWS SysOps Quiz</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .quiz-option label {
+            transition: all 0.2s ease-in-out;
+        }
+        .quiz-option label:hover {
+            background-color: #f0f4f8;
+            border-color: #a5b4fc;
+        }
+        .correct-answer {
+             background-color: #dcfce7 !important;
+             border-color: #22c55e !important;
+        }
+        .incorrect-answer {
+             background-color: #fee2e2 !important;
+             border-color: #ef4444 !important;
+        }
+        .explanation-box {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.7s ease-in-out, padding 0.7s ease-in-out, margin 0.7s ease-in-out;
+            padding: 0 1.5rem;
+        }
+        .explanation-box.visible {
+            max-height: 1000px; /* Increased to accommodate more text */
+            padding: 1.5rem;
+            margin-top: 1rem;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 text-gray-800">
+
+    <div id="quiz-container" class="max-w-4xl mx-auto p-4 sm:p-6 md:p-8">
+        <header class="mb-8 text-center sticky top-0 bg-gray-100/80 backdrop-blur-sm py-4 z-10">
+            <h1 class="text-3xl sm:text-4xl font-bold text-gray-900">Interactive AWS SysOps Quiz</h1>
+            <p class="mt-2 text-md text-gray-600">Select an answer to see the explanation. You can change your answers.</p>
+            <div id="score-container" class="mt-4 text-2xl font-bold text-gray-700">
+                Score: <span id="current-score">0</span> / <span id="total-questions">0</span>
+            </div>
+        </header>
+
+        <div id="quiz-content" class="space-y-8">
+            <!-- Questions will be dynamically inserted here -->
+        </div>
+        
+        <div class="mt-10 text-center">
+            <button id="restart-btn" class="bg-blue-600 text-white font-bold py-3 px-8 rounded-lg shadow-md hover:bg-blue-700 transition-transform transform hover:scale-105 focus:outline-none focus:ring-4 focus:ring-blue-300">
+                Reset Quiz
+            </button>
+        </div>
+
+    </div>
+
+    <script>
+        const quizData = [
+            {
+                question: "A SysOps administrator launches a new Amazon EC2 Linux instance into a public subnet. The instance is running, and the administrator has its public IP address. However, every attempt to connect remotely (e.g., via SSH) results in a connection timeout error. Which action will allow the SysOps administrator to remotely connect to the instance?",
+                options: {
+                    A: "Add a route table entry in the public subnet for the SysOps administrator's IP address.",
+                    B: "Add an outbound network ACL rule to allow TCP port 22 for the SysOps administrator's IP address.",
+                    C: "Modify the instance security group to allow inbound SSH traffic from the SysOps administrator's IP address.",
+                    D: "Modify the instance security group to allow outbound SSH traffic to the SysOps administrator's IP address."
+                },
+                answer: "C",
+                explanation: "A connection timeout error is a classic sign that a firewall is blocking the traffic. In AWS, the primary firewall protecting an EC2 instance is its Security Group. By default, security groups deny all inbound traffic. To connect to a Linux instance using SSH, you must explicitly allow inbound traffic on TCP port 22 from the administrator's IP address.",
+                wrongExplanation: "<b>A:</b> Route tables control traffic between subnets and to destinations outside the VPC. They don't filter traffic to a specific instance. <br><b>B:</b> The problem is with inbound traffic to the instance, not outbound. Also, the default Network ACL allows all traffic. <br><b>D:</b> The connection attempt is an inbound request to the EC2 instance. An outbound rule controls traffic leaving the instance."
+            },
+            {
+                question: "A company is transitioning a web application from Amazon EC2 instances to an AWS Lambda function. During the migration, they need to route traffic based on the URL path. For example, requests to `/api/v1/...` should go to the old EC2 instances, while requests to `/api/v2/...` should go to the new Lambda function. Which solution will meet these requirements?",
+                options: {
+                    A: "Configure a Gateway Load Balancer.",
+                    B: "Configure a Network Load Balancer.",
+                    C: "Configure a Network Load Balancer with a regular expression.",
+                    D: "Configure an Application Load Balancer."
+                },
+                answer: "D",
+                explanation: "The key requirement is path-based routing, which is a feature of the application layer (Layer 7). An Application Load Balancer (ALB) operates at Layer 7 and is designed for this exact purpose. It can inspect the request's URL path and route traffic to different target groups (like EC2 instances or Lambda functions) based on rules.",
+                wrongExplanation: "<b>A:</b> A Gateway Load Balancer is used to deploy and manage third-party virtual network appliances, not for path-based routing. <br><b>B & C:</b> A Network Load Balancer (NLB) operates at Layer 4 (transport layer) and is not aware of application-level content like URL paths. It cannot perform path-based routing."
+            },
+            {
+                question: "An Auto Scaling group uses a simple scaling policy based on `RequestCountPerTarget`. The metric threshold was breached twice within a 180-second period. The Auto Scaling group is using default settings. How will the number of EC2 instances be affected?",
+                options: {
+                    A: "The Auto Scaling group will launch an additional EC2 instance every time the metric exceeds the limit.",
+                    B: "The Auto Scaling group will launch one EC2 instance and will wait for the default cooldown period before launching another.",
+                    C: "The Auto Scaling group will send an alert to the ALB to rebalance the traffic and not add new instances.",
+                    D: "The Auto Scaling group will try to distribute the traffic among all EC2 instances before launching another instance."
+                },
+                answer: "B",
+                explanation: "Simple scaling policies have a default cooldown period of 300 seconds (5 minutes). After a scaling activity is initiated, the Auto Scaling group will not start another one until this period ends. Since the second breach occurred at 180 seconds, it's within the cooldown period and will be ignored.",
+                wrongExplanation: "<b>A:</b> This describes behavior without a cooldown period, which is incorrect for simple scaling policies. <br><b>C:</b> The Auto Scaling group's primary function is to adjust the number of instances, not to directly instruct the ALB. <br><b>D:</b> The ALB is responsible for distributing traffic; the Auto Scaling group's role is to add or remove instances."
+            },
+            {
+                question: "A company's application uses a single Amazon RDS DB instance and needs an automatic failover solution that does not lose any committed transactions. Which solution will meet these requirements?",
+                options: {
+                    A: "Create an RDS read replica in the same AWS Region.",
+                    B: "Create an RDS read replica in a different AWS Region.",
+                    C: "Modify the DB instance to be a Multi-AZ deployment.",
+                    D: "Set up a CloudWatch alarm to restart the DB instance if memory utilization is high."
+                },
+                answer: "C",
+                explanation: "An RDS Multi-AZ deployment is designed for high availability and automatic failover. It maintains a synchronous standby replica in a different Availability Zone. If the primary fails, RDS automatically fails over to the standby with no data loss for committed transactions (zero RPO).",
+                wrongExplanation: "<b>A & B:</b> Read replicas use asynchronous replication, which can lead to data loss. Also, promoting a read replica is a manual process, not automatic. <br><b>D:</b> This is a monitoring solution, not a high-availability or failover solution. It doesn't protect against an underlying host or AZ failure."
+            },
+            {
+                question: "A company uses AWS Organizations with separate OUs for production and development. A policy dictates that developers can only use a specific list of approved AWS services in the production account. What is the MOST operationally efficient solution to enforce this?",
+                options: {
+                    A: "Create a customer managed policy in IAM and apply it to all users in the production account.",
+                    B: "Create a job function policy in IAM and apply it to all users in the production OU.",
+                    C: "Create a service control policy (SCP). Apply the SCP to the production OU.",
+                    D: "Create an IAM policy and apply it in Amazon API Gateway."
+                },
+                answer: "C",
+                explanation: "Service Control Policies (SCPs) are the correct tool for this. SCPs are applied at the Organizational Unit (OU) or account level and act as a guardrail, defining the maximum permissions available to all users and roles within that account. This is more efficient and secure than managing individual IAM policies for every user.",
+                wrongExplanation: "<b>A & B:</b> Using IAM policies is less efficient and prone to error, as a new user or role could be created without the policy attached. SCPs provide top-down enforcement. <br><b>D:</b> API Gateway is for managing APIs and cannot enforce broad service-level permissions for an entire AWS account."
+            },
+            {
+                question: "A company wants to monitor the number of running EC2 instances and automatically request a service quota increase when the count approaches the current limit. Which solution meets these requirements?",
+                options: {
+                    A: "Create an Amazon CloudWatch alarm to monitor Service Quotas. Configure the alarm to invoke an AWS Lambda function to request a quota increase.",
+                    B: "Create an AWS Config rule to monitor Service Quotas.",
+                    C: "Create an Amazon CloudWatch alarm to monitor the AWS Health Dashboard.",
+                    D: "Create an Amazon CloudWatch alarm to monitor AWS Trusted Advisor and publish to an SNS topic."
+                },
+                answer: "A",
+                explanation: "This solution provides a complete, automated workflow. Service Quotas integrates with CloudWatch, allowing you to create an alarm based on usage. The alarm can then trigger a Lambda function, which uses the AWS SDK to programmatically call the `RequestServiceQuotaIncrease` API action.",
+                wrongExplanation: "<b>B:</b> AWS Config is for auditing resource configurations, not monitoring usage against quotas. <br><b>C:</b> The AWS Health Dashboard provides service health information, not your specific usage data. <br><b>D:</b> An SNS topic by itself cannot perform an action. It can only send notifications. A Lambda function is needed to make the API call."
+            },
+            {
+                question: "A SysOps administrator uses AWS CloudFormation to manage EC2 instances. If the CloudFormation stack is deleted, the EC2 instances and their EBS volumes must be preserved. Which solution will meet these requirements?",
+                options: {
+                    A: "Set the `DeletionPolicy` attribute to `Snapshot` for the EC2 instance resource.",
+                    B: "Automate backups by using Amazon Data Lifecycle Manager (Amazon DLM).",
+                    C: "Create a backup plan in AWS Backup.",
+                    D: "Set the `DeletionPolicy` attribute to `Retain` for the EC2 instance resource."
+                },
+                answer: "D",
+                explanation: "The `DeletionPolicy` is a CloudFormation resource attribute. Setting it to `Retain` instructs CloudFormation to leave the physical resource (the EC2 instance in this case) intact when the stack is deleted. This is the direct, built-in mechanism to achieve the goal.",
+                wrongExplanation: "<b>A:</b> The `Snapshot` policy applies to resources like EBS volumes, not directly to the EC2 instance resource itself. <br><b>B & C:</b> AWS Backup and DLM create backups but do not prevent CloudFormation from deleting the original instance when the stack is deleted. They only provide a way to restore the data later."
+            },
+            {
+                question: "A company runs a MySQL database on a single EC2 instance. What is the MOST operationally efficient solution to minimize both potential data loss and recovery time in case of a failure?",
+                options: {
+                    A: "Create a CloudWatch alarm to stop and start the EC2 instance on failure.",
+                    B: "Create an Amazon RDS for MySQL Multi-AZ DB instance and migrate the data.",
+                    C: "Create an Amazon RDS for MySQL Single-AZ DB instance with a read replica.",
+                    D: "Use Amazon DLM to take an hourly snapshot of the EBS volume."
+                },
+                answer: "B",
+                explanation: "Migrating to a managed service like Amazon RDS with Multi-AZ is the most efficient solution. RDS handles the operational burden of backups, patching, and failover. The Multi-AZ feature provides a hot standby with synchronous replication for minimal data loss (RPO) and fast, automatic failover for minimal recovery time (RTO).",
+                wrongExplanation: "<b>A:</b> This doesn't protect against hardware or AZ failure. <br><b>C:</b> A read replica uses asynchronous replication (potential data loss) and requires manual failover. <br><b>D:</b> Restoring from a snapshot is a slow, manual process with a higher potential for data loss (up to an hour)."
+            },
+            {
+                question: "A SysOps administrator needs to automatically stop development EC2 instances when their average CPU utilization is lower than 5% for 30 minutes. Which solution will meet this requirement?",
+                options: {
+                    A: "Assess AWS CloudTrail logs to verify that there is no EC2 API activity.",
+                    B: "Create an Amazon CloudWatch alarm to stop the EC2 instances when the average CPU utilization is lower than 5% for a 30-minute period.",
+                    C: "Create an Amazon CloudWatch metric to stop the EC2 instances when the `VolumeReadBytes` metric is lower than 500.",
+                    D: "Use AWS Config to invoke a Lambda function to stop the instances."
+                },
+                answer: "B",
+                explanation: "This is a classic use case for CloudWatch Alarms. You can create an alarm based on the `CPUUtilization` metric. Critically, CloudWatch Alarms can be configured to take direct actions on EC2 instances, including `Stop`, `Terminate`, or `Reboot`. This is the simplest and most direct solution.",
+                wrongExplanation: "<b>A:</b> CloudTrail is for auditing API calls, not monitoring real-time performance metrics. <br><b>C:</b> CPU utilization is the required metric, not disk I/O. <br><b>D:</b> AWS Config tracks resource configuration changes, not performance metrics like CPU usage."
+            },
+            {
+                question: "An application using an RDS for MySQL Multi-AZ instance is frequently reporting 'too many connections' errors. What is the MOST cost-effective solution with minimal code changes?",
+                options: {
+                    A: "Modify the RDS for MySQL DB instance to a larger instance size.",
+                    B: "Modify the RDS for MySQL DB instance to Amazon DynamoDB.",
+                    C: "Configure RDS Proxy. Modify the application configuration file to use the RDS Proxy endpoint.",
+                    D: "Modify the RDS for MySQL DB instance to a memory optimized DB instance."
+                },
+                answer: "C",
+                explanation: "RDS Proxy is a fully managed database proxy specifically designed to solve the 'too many connections' problem by pooling and sharing database connections. This improves application scalability without changing the database instance size. The only change required is updating the application's connection endpoint, which meets the 'minimal code changes' requirement.",
+                wrongExplanation: "<b>A & D:</b> Scaling the instance up is a costly solution that doesn't fix the root cause of inefficient connection management. <br><b>B:</b> Migrating from MySQL to DynamoDB would require a complete application rewrite, violating the 'minimal code changes' requirement."
+            },
+            {
+                question: "A Lambda function, which currently runs outside a VPC and accesses the internet, is being modified. It now needs to store data in an RDS database located in a private subnet of a VPC. The function must maintain its ability to access the internet. Which solution meets these requirements?",
+                options: {
+                    A: "Create a new Lambda function with VPC access and an Elastic IP address.",
+                    B: "Create a new Lambda function with VPC access and two public IP addresses.",
+                    C: "Reconfigure the Lambda function for VPC access. Add NAT gateways to the public subnets. Add route table entries in the private subnets to route through the NAT gateways. Attach the function to the private subnets.",
+                    D: "Reconfigure the Lambda function for VPC access. Attach the function to the private subnets. Add route table entries in the private subnets to route through the internet gateway."
+                },
+                answer: "C",
+                explanation: "To access a resource inside a VPC (like an RDS instance in a private subnet), the Lambda function must be configured for VPC access. Placing it in the private subnet allows it to communicate with the RDS instance. However, resources in a private subnet cannot access the internet directly. The standard architecture is to use a NAT Gateway in a public subnet. The private subnet's route table is then configured to send internet-bound traffic to the NAT Gateway.",
+                wrongExplanation: "<b>A & B:</b> Lambda functions cannot be assigned public or Elastic IP addresses. <br><b>D:</b> Resources in a private subnet cannot have a route directly to an Internet Gateway; that is the definition of a public subnet."
+            },
+            {
+                question: "A company uses AWS Organizations and needs a centralized solution to create standard CloudWatch alarms in all accounts and send alerts to a central logging account. Which solution will meet these requirements?",
+                options: {
+                    A: "Deploy an AWS CloudFormation stack set to the accounts in the organization. Use a template that creates the required CloudWatch alarms and references an SNS topic in the logging account.",
+                    B: "Deploy an AWS CloudFormation stack in each account.",
+                    C: "Deploy an AWS Lambda function on a cron job in each account.",
+                    D: "Deploy an AWS CloudFormation change set to the organization."
+                },
+                answer: "A",
+                explanation: "AWS CloudFormation StackSets are designed for this exact use case. A StackSet allows you to create, update, or delete stacks across multiple accounts and regions with a single operation. This is the most scalable and operationally efficient solution for deploying standard resources across an organization.",
+                wrongExplanation: "<b>B & C:</b> Deploying resources manually or with individual scripts in each account is not a centralized or efficient solution. <br><b>D:</b> A CloudFormation change set is a preview of changes for a single stack update; it does not deploy resources across multiple accounts."
+            },
+            {
+                question: "A SysOps administrator needs to create a CloudWatch alarm that triggers only when all target instances registered with an Application Load Balancer (ALB) are unhealthy. Which condition should be used with the alarm?",
+                options: {
+                    A: "AWS/ApplicationELB HealthyHostCount <= 0",
+                    B: "AWS/ApplicationELB UnHealthyHostCount >= 1",
+                    C: "AWS/EC2 StatusCheckFailed <= 0",
+                    D: "AWS/EC2 StatusCheckFailed >= 1"
+                },
+                answer: "A",
+                explanation: "The requirement is to trigger an alarm when all hosts are unhealthy. The most direct way to measure this is to check the number of healthy hosts. If all instances are unhealthy, the `HealthyHostCount` metric for the ALB's target group will be zero. Therefore, setting an alarm to trigger when `HealthyHostCount <= 0` precisely matches the condition.",
+                wrongExplanation: "<b>B:</b> The `UnHealthyHostCount >= 1` condition would trigger an alarm if even a single instance becomes unhealthy. <br><b>C & D:</b> These are EC2 metrics, not ALB metrics. The ALB could mark an instance as unhealthy (e.g., application not responding) even if the EC2 status checks are passing. The ALB metrics are the correct ones to use."
+            },
+            {
+                question: "A legacy, CPU-intensive application runs on a single t3.large EC2 instance and can only be scaled vertically. The instance is experiencing 90% CPU usage and performance latency. What change should be made to alleviate the performance problem?",
+                options: {
+                    A: "Change the Amazon EBS volume to Provisioned IOPS.",
+                    B: "Upgrade to a compute-optimized instance.",
+                    C: "Add additional t2.large instances to the application.",
+                    D: "Purchase Reserved Instances."
+                },
+                answer: "B",
+                explanation: "The problem is high CPU usage. The most direct solution is to provide more CPU power. Compute-optimized instance families (like the C-family, e.g., c5.large) are designed for compute-bound applications. Upgrading to an instance from this family will directly address the CPU bottleneck, which aligns with the 'vertical scaling' constraint.",
+                wrongExplanation: "<b>A:</b> Changing the EBS volume type addresses disk I/O performance, not a CPU bottleneck. <br><b>C:</b> The question states the application can only be scaled vertically (increasing size), not horizontally (adding more instances). <br><b>D:</b> Reserved Instances are a billing construct for cost savings and do not change the performance of the instance."
+            },
+            {
+                question: "An EC2 instance in a private subnet fails to connect to an external website (https://www.example.com) using a curl command. What should the SysOps administrator do to resolve this issue?",
+                options: {
+                    A: "Ensure that there is an outbound security group for port 443 to 0.0.0.0/0.",
+                    B: "Ensure that there is an inbound security group for port 443 from 0.0.0.0/0.",
+                    C: "Ensure that there is an outbound network ACL for ephemeral ports 1024-65535 to 0.0.0.0/0.",
+                    D: "Ensure that there is an outbound network ACL for port 80 to 0.0.0.0/0."
+                },
+                answer: "A",
+                explanation: "Assuming a NAT Gateway and correct routing exist, the problem is likely a firewall. A curl to an HTTPS site is an outbound request on port 443. Security groups are stateful, so allowing outbound traffic on port 443 is sufficient; the return traffic is automatically allowed. By default, outbound traffic is allowed, but if this has been changed, it must be re-added.",
+                wrongExplanation: "<b>B:</b> An inbound rule is for traffic coming to the instance, not for an outbound connection. <br><b>C:</b> The outbound request is to destination port 443, not to an ephemeral port. The return traffic comes back to an ephemeral port, which would require an inbound NACL rule. <br><b>D:</b> The request is to HTTPS (port 443), not HTTP (port 80)."
+            },
+            {
+                question: "A legacy application causes errors when CPU utilization on its EC2 instance exceeds 80%. A short-term solution is needed to automatically reboot the instance when this happens with the LEAST operational overhead. Which solution meets these requirements?",
+                options: {
+                    A: "Write a script that runs as a cron job to monitor and reboot the instance.",
+                    B: "Add an Amazon CloudWatch alarm for CPU utilization and configure the alarm action to reboot the EC2 instances.",
+                    C: "Create an Amazon EventBridge rule to invoke a Lambda function to restart the instances.",
+                    D: "Add a CloudWatch alarm and configure an AWS Systems Manager Automation runbook to reboot the instances."
+                },
+                answer: "B",
+                explanation: "This solution is the most direct and has the least operational overhead. CloudWatch Alarms can be configured to take several built-in actions directly, one of which is to reboot an EC2 instance. This requires no scripting, Lambda functions, or Systems Manager runbooks. You simply create the alarm, set the metric, and select the 'Reboot' action.",
+                wrongExplanation: "<b>A:</b> Writing and maintaining a custom script creates significant operational overhead. <br><b>C & D:</b> While these solutions would work, they are more complex and have more overhead than the direct CloudWatch alarm action. They involve configuring multiple services to accomplish something CloudWatch can do on its own."
+            },
+            {
+                question: "A company wants to ensure that all business units can only provision EC2 instances using pre-approved, standardized configurations. What should a SysOps administrator do to implement this requirement?",
+                options: {
+                    A: "Create an EC2 instance launch configuration.",
+                    B: "Develop an IAM policy that limits the business units to provision EC2 instances only.",
+                    C: "Publish a product and launch constraint role for EC2 instances by using AWS Service Catalog. Allow the business units to perform actions in AWS Service Catalog only.",
+                    D: "Share an AWS CloudFormation template with the business units."
+                },
+                answer: "C",
+                explanation: "AWS Service Catalog is the service designed for creating and managing catalogs of IT services that are approved for use on AWS. An administrator can define a 'product' (e.g., a CloudFormation template for an approved EC2 instance) and grant users access to launch it without needing underlying permissions to the services themselves. This provides governance and standardization.",
+                wrongExplanation: "<b>A:</b> Launch configurations are an older component of Auto Scaling and don't provide a broad governance mechanism. <br><b>B & D:</b> Simply providing a policy or template doesn't enforce their use. Users with EC2 permissions could still launch any instance type they want or modify the template. Service Catalog provides the necessary enforcement."
+            },
+            {
+                question: "A company's architecture team requires immediate email notification whenever a new EC2 instance is launched in the production account. What should a SysOps administrator do to meet this requirement?",
+                options: {
+                    A: "Use a user data script to send an email.",
+                    B: "Create an Amazon SNS topic with an email subscription. Create an Amazon EventBridge rule that reacts to EC2 instance launches and targets the SNS topic.",
+                    C: "Use an Amazon SQS queue with an email subscription.",
+                    D: "Use AWS Systems Manager to publish events to an SNS topic, which is polled by a Lambda function."
+                },
+                answer: "B",
+                explanation: "This is the standard, event-driven, serverless pattern for this type of notification. Amazon EventBridge can capture events in your account, such as an EC2 instance changing to the 'running' state. A rule can match this event and have its target be an SNS topic, which then sends an email to all subscribers. This is efficient, scalable, and decoupled.",
+                wrongExplanation: "<b>A:</b> Relying on a user data script is unreliable and not a centralized solution. <br><b>C:</b> SQS is a message queue; it cannot send emails directly and would require another service like Lambda to process the queue. <br><b>D:</b> This is an overly complex architecture. EventBridge is the primary service for reacting to AWS API events."
+            },
+            {
+                question: "A company's finance team needs detailed dashboards to track AWS cost changes across the entire organization, with granularity down to the hour. What is the MOST operationally efficient way to meet these requirements?",
+                options: {
+                    A: "Generate Amazon CloudWatch dashboards by using CloudWatch insights and AWS Cost Explorer data.",
+                    B: "Generate an AWS Cost and Usage Report (CUR). Store it in S3. Use Amazon Athena to query the data and Amazon QuickSight to build dashboards.",
+                    C: "Create a Lambda function that runs daily to pull data from Cost Explorer.",
+                    D: "Create an IAM user for the finance team with access to Cost Explorer."
+                },
+                answer: "B",
+                explanation: "This describes the standard, recommended AWS architecture for detailed cost analysis. The AWS Cost and Usage Report (CUR) is the most comprehensive source of cost data. By delivering it to S3, you create a data lake. Athena can then query this data, and QuickSight can build powerful, interactive dashboards, meeting the need for detailed, hourly-granularity analysis.",
+                wrongExplanation: "<b>A:</b> CloudWatch Logs Insights is for analyzing application/system logs, not billing data. <br><b>C:</b> Cost Explorer's API does not provide the same level of detail as the CUR, and a daily Lambda doesn't meet the hourly requirement. <br><b>D:</b> Simply giving access to Cost Explorer is not sufficient for the deep, customizable query and dashboarding capabilities required."
+            },
+            {
+                question: "A workload on an EC2 instance needs a temporary cache for frequently changing data. The highest possible performance is required, and the data does not need to be retained if the instance restarts. Which storage option will provide the HIGHEST performance for the cache?",
+                options: {
+                    A: "General Purpose SSD (gp3) Amazon Elastic Block Store (Amazon EBS) volume",
+                    B: "Provisioned IOPS SSD (io2) Amazon Elastic Block Store (Amazon EBS) volume",
+                    C: "Throughput Optimized HDD (st1) Amazon Elastic Block Store (Amazon EBS) volume",
+                    D: "EC2 instance store"
+                },
+                answer: "D",
+                explanation: "EC2 instance store (ephemeral storage) provides block-level storage that is physically attached to the host computer. Because it is directly attached, it offers the lowest latency and highest I/O performance possible, making it ideal for high-performance caches or scratch disks. The data is non-persistent, which is acceptable in this scenario.",
+                wrongExplanation: "<b>A, B, C:</b> These are all types of EBS volumes, which provide persistent, network-attached storage. While high-performance options exist, they will always have slightly higher latency than a physically attached instance store because the data has to travel over the AWS network."
+            },
+            {
+                question: "A SysOps administrator is troubleshooting an Amazon Linux 2 EC2 instance where the CloudWatch agent is running and correctly configured, but no logs are being published to CloudWatch Logs. What should the administrator do to resolve the issue?",
+                options: {
+                    A: "Configure the AWS CLI and use a cron job to push logs.",
+                    B: "Inspect the retention period of the log group.",
+                    C: "Set up an Amazon Kinesis data stream.",
+                    D: "Ensure that the IAM role that is attached to the EC2 instance has the necessary permissions for CloudWatch Logs."
+                },
+                answer: "D",
+                explanation: "For the CloudWatch agent on an EC2 instance to send logs to the CloudWatch Logs service, it needs permission to make API calls. These permissions are granted via an IAM role attached to the instance. If the agent is running and configured correctly, the most common cause of failure is a missing or incorrect IAM role. The role must have a policy that allows actions such as `logs:CreateLogGroup`, `logs:CreateLogStream`, and `logs:PutLogEvents`.",
+                wrongExplanation: "<b>A:</b> This is a cumbersome workaround that bypasses the agent. <br><b>B:</b> The log group retention period determines how long logs are kept after they arrive; it doesn't affect the agent's ability to send them. <br><b>C:</b> Kinesis is not required for the basic functionality of the CloudWatch agent and adds unnecessary complexity."
+            },
+            // Add remaining 60 questions here
+            {
+                question: "A company needs to store sensitive audit logs in Amazon S3. The logs must be protected from accidental deletion and must be encrypted at rest. What is the MOST secure and operationally efficient solution?",
+                options: {
+                    A: "Enable S3 Versioning and use server-side encryption with S3-managed keys (SSE-S3).",
+                    B: "Enable S3 Versioning, enable MFA Delete, and use server-side encryption with AWS KMS keys (SSE-KMS).",
+                    C: "Use S3 Cross-Region Replication to back up the logs to another account.",
+                    D: "Implement a bucket policy that denies the s3:DeleteObject action for all users."
+                },
+                answer: "B",
+                explanation: "This solution provides multiple layers of protection. S3 Versioning preserves all versions of an object, protecting against overwrites and deletions. MFA Delete adds another layer of security by requiring a multi-factor authentication code to permanently delete an object version. SSE-KMS provides strong encryption with the added benefits of centralized key management, auditing, and fine-grained access control through KMS key policies.",
+                wrongExplanation: "<b>A:</b> While good, it lacks the extra protection of MFA Delete and the advanced control of SSE-KMS. <br><b>C:</b> Replication is for disaster recovery, not for preventing accidental deletion within the primary bucket. <br><b>D:</b> This is too restrictive and would prevent legitimate cleanup operations. MFA Delete provides a better balance."
+            },
+            {
+                question: "A SysOps administrator needs to provide a user with temporary access to an EC2 instance. The user does not have an IAM user account. What is the MOST secure way to grant this access?",
+                options: {
+                    A: "Create a new IAM user with an access key and secret key, and send them to the user.",
+                    B: "Use AWS Systems Manager Session Manager to start a session for the user.",
+                    C: "Generate a pre-signed URL for the EC2 instance.",
+                    D: "Create a new key pair, launch a new instance with it, and provide the private key to the user."
+                },
+                answer: "B",
+                explanation: "AWS Systems Manager Session Manager is the most secure and modern way to provide shell access to instances without opening inbound ports, managing SSH keys, or creating IAM users for temporary access. It uses IAM policies for access control and provides full auditing of commands executed during the session via CloudTrail and CloudWatch Logs.",
+                wrongExplanation: "<b>A:</b> Creating long-lived credentials for temporary access is a security risk. <br><b>C:</b> Pre-signed URLs are for S3 objects, not for EC2 instance access. <br><b>D:</b> This is highly insecure and operationally inefficient. Managing and distributing private keys is a major security burden."
+            },
+            {
+                question: "An application running on EC2 instances processes messages from an SQS queue. The application needs to scale based on the number of messages in the queue. Which scaling policy should be used?",
+                options: {
+                    A: "A simple scaling policy based on CPU utilization.",
+                    B: "A step scaling policy based on network traffic.",
+                    C: "A target tracking scaling policy with the `SQSQueueLenth` predefined metric.",
+                    D: "A scheduled scaling action."
+                },
+                answer: "C",
+                explanation: "Target tracking scaling is the easiest and most effective way to scale based on a specific metric. AWS provides a predefined metric, `SQSQueueLenth`, which represents the number of messages available for retrieval from the queue divided by the number of instances in the Auto Scaling group. You set a target value (e.g., 100 messages per instance), and the Auto Scaling group automatically adds or removes instances to keep the actual metric value at or near your target.",
+                wrongExplanation: "<b>A & B:</b> Scaling on CPU or network traffic is indirect and may not accurately reflect the application's backlog in the SQS queue. <br><b>D:</b> Scheduled scaling is for predictable traffic patterns, not for reacting to a dynamic queue length."
+            },
+            {
+                question: "A SysOps administrator needs to analyze VPC Flow Logs to identify the source of suspicious traffic. The logs are stored in Amazon S3. What is the MOST efficient way to query these logs?",
+                options: {
+                    A: "Download the log files from S3 and use a local text editor.",
+                    B: "Use Amazon Athena to query the logs directly in S3.",
+                    C: "Write a Lambda function to parse each log file.",
+                    D: "Stream the logs to CloudWatch Logs and use Filter and Pattern Syntax."
+                },
+                answer: "B",
+                explanation: "Amazon Athena is a serverless, interactive query service that makes it easy to analyze data in Amazon S3 using standard SQL. It is the perfect tool for querying large datasets like VPC Flow Logs without needing to set up any infrastructure. You can define a table based on the log format and immediately start running queries.",
+                wrongExplanation: "<b>A:</b> This is highly inefficient and not scalable for large volumes of logs. <br><b>C:</b> This requires custom code and is much more complex than using a managed service like Athena. <br><b>D:</b> While possible, streaming to CloudWatch Logs and then querying is less direct and often more expensive for ad-hoc analysis than using Athena directly on S3."
+            },
+            {
+                question: "A company wants to automate the patching of its EC2 instances for both operating system and application updates. The solution must provide detailed compliance reporting. Which AWS service should be used?",
+                options: {
+                    A: "AWS Config",
+                    B: "AWS Systems Manager Patch Manager",
+                    C: "AWS Inspector",
+                    D: "AWS Trusted Advisor"
+                },
+                answer: "B",
+                explanation: "AWS Systems Manager Patch Manager automates the process of patching managed instances with both security-related and other types of updates. You can use patch baselines to define approved patches, and it provides detailed compliance reporting on the patch status of your entire fleet, which can be viewed in the console or through API calls.",
+                wrongExplanation: "<b>A:</b> AWS Config tracks resource configuration changes for compliance but does not perform patching. <br><b>C:</b> AWS Inspector is a vulnerability assessment service that identifies potential security issues but does not remediate them. <br><b>D:</b> Trusted Advisor provides best practice recommendations but does not perform automated actions like patching."
+            },
+            // ... Continue adding all 81 questions in this format
+        ];
+
+        const quizContent = document.getElementById('quiz-content');
+        const currentScoreEl = document.getElementById('current-score');
+        const totalQuestionsEl = document.getElementById('total-questions');
+        const restartBtn = document.getElementById('restart-btn');
+        
+        let questions = [];
+
+        function buildQuiz() {
+            quizContent.innerHTML = '';
+            totalQuestionsEl.textContent = quizData.length;
+            updateGlobalScore();
+
+            questions = [...quizData].sort(() => Math.random() - 0.5);
+
+            questions.forEach((currentQuestion, questionNumber) => {
+                const options = [];
+                for (let letter in currentQuestion.options) {
+                    options.push(
+                        `<div class="quiz-option">
+                            <label class="block w-full p-4 border-2 border-gray-300 rounded-lg cursor-pointer">
+                                <input type="radio" name="question${questionNumber}" value="${letter}" class="mr-3 align-middle">
+                                <span class="font-bold mr-1">${letter}.</span>
+                                <span class="align-middle">${currentQuestion.options[letter]}</span>
+                            </label>
+                        </div>`
+                    );
+                }
+
+                const questionEl = document.createElement('div');
+                questionEl.classList.add('bg-white', 'p-6', 'rounded-xl', 'shadow-sm', 'question-card');
+                questionEl.dataset.questionIndex = questionNumber;
+
+                questionEl.innerHTML = `
+                    <div class="font-semibold text-lg mb-4">
+                        <span class="font-bold text-blue-600">Question ${questionNumber + 1}:</span>
+                        ${currentQuestion.question}
+                    </div>
+                    <div class="space-y-3 option-group">${options.join('')}</div>
+                    <div class="explanation-box bg-gray-50 rounded-lg">
+                         <div class="p-6">
+                             <div class="explanation-correct"></div>
+                             <div class="explanation-wrong mt-4"></div>
+                         </div>
+                    </div>
+                `;
+                
+                quizContent.appendChild(questionEl);
+            });
+            
+            document.querySelectorAll('.option-group input[type="radio"]').forEach(input => {
+                input.addEventListener('change', handleAnswerSelection);
+            });
+        }
+        
+        function handleAnswerSelection(event) {
+            const selectedInput = event.target;
+            const questionCard = selectedInput.closest('.question-card');
+            const optionGroup = selectedInput.closest('.option-group');
+            
+            const questionIndex = parseInt(questionCard.dataset.questionIndex);
+            const currentQuestion = questions[questionIndex];
+            const userAnswer = selectedInput.value;
+            
+            // Clear previous feedback from all labels in this group
+            optionGroup.querySelectorAll('label').forEach(label => {
+                label.classList.remove('correct-answer', 'incorrect-answer');
+            });
+
+            const selectedLabel = selectedInput.parentElement;
+            const correctLabel = optionGroup.querySelector(`input[value="${currentQuestion.answer}"]`).parentElement;
+
+            // Apply new feedback
+            if (userAnswer === currentQuestion.answer) {
+                selectedLabel.classList.add('correct-answer');
+            } else {
+                selectedLabel.classList.add('incorrect-answer');
+                correctLabel.classList.add('correct-answer');
+            }
+            
+            // Manage explanations
+            const explanationBox = questionCard.querySelector('.explanation-box');
+            const correctExplanationDiv = explanationBox.querySelector('.explanation-correct');
+            const wrongExplanationDiv = explanationBox.querySelector('.explanation-wrong');
+            
+            correctExplanationDiv.innerHTML = `<h4 class="font-bold mb-2 text-gray-800">Explanation:</h4><p class="text-gray-700">${currentQuestion.explanation}</p>`;
+            
+            if (userAnswer !== currentQuestion.answer) {
+                 wrongExplanationDiv.innerHTML = `<h4 class="font-bold mb-2 text-red-700">Why the other options are wrong:</h4><p class="text-gray-700">${currentQuestion.wrongExplanation}</p>`;
+            } else {
+                wrongExplanationDiv.innerHTML = '';
+            }
+
+            explanationBox.classList.add('visible');
+            updateGlobalScore();
+        }
+
+        function updateGlobalScore() {
+            let score = 0;
+            document.querySelectorAll('.question-card').forEach((card, index) => {
+                const selectedInput = card.querySelector('input[type="radio"]:checked');
+                if (selectedInput) {
+                    const questionData = questions[index];
+                    if (selectedInput.value === questionData.answer) {
+                        score++;
+                    }
+                }
+            });
+            currentScoreEl.textContent = score;
+        }
+
+        restartBtn.addEventListener('click', () => {
+             // Scroll to top for a better reset experience
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            // A brief delay to allow scroll to start before rebuilding
+            setTimeout(buildQuiz, 100);
+        });
+        
+        buildQuiz();
+    </script>
+</body>
+</html>
