@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive AWS SysOps Quiz</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .quiz-option label {
+            transition: all 0.2s ease-in-out;
+        }
+        .quiz-option label:hover {
+            background-color: #f0f4f8;
+            border-color: #a5b4fc;
+        }
+        .correct-answer {
+             background-color: #dcfce7 !important;
+             border-color: #22c55e !important;
+        }
+        .incorrect-answer {
+             background-color: #fee2e2 !important;
+             border-color: #ef4444 !important;
+        }
+        .explanation-box {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.7s ease-in-out, padding 0.7s ease-in-out, margin 0.7s ease-in-out;
+            padding: 0 1.5rem;
+        }
+        .explanation-box.visible {
+            max-height: 1000px; /* Increased to accommodate more text */
+            padding: 1.5rem;
+            margin-top: 1rem;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 text-gray-800">
+
+    <div id="quiz-container" class="max-w-4xl mx-auto p-4 sm:p-6 md:p-8">
+        <header class="mb-8 text-center sticky top-0 bg-gray-100/80 backdrop-blur-sm py-4 z-10">
+            <h1 class="text-3xl sm:text-4xl font-bold text-gray-900">Interactive AWS SysOps Quiz</h1>
+            <p class="mt-2 text-md text-gray-600">Select an answer to see the explanation. You can change your answers.</p>
+            <div id="score-container" class="mt-4 text-2xl font-bold text-gray-700">
+                Score: <span id="current-score">0</span> / <span id="total-questions">0</span>
+            </div>
+        </header>
+
+        <div id="quiz-content" class="space-y-8">
+            <!-- Questions will be dynamically inserted here -->
+        </div>
+        
+        <div class="mt-10 text-center">
+            <button id="restart-btn" class="bg-blue-600 text-white font-bold py-3 px-8 rounded-lg shadow-md hover:bg-blue-700 transition-transform transform hover:scale-105 focus:outline-none focus:ring-4 focus:ring-blue-300">
+                Reset Quiz
+            </button>
+        </div>
+
+    </div>
+
+    <script>
+        const quizData = [
+            {
+                question: "A SysOps administrator launches a new Amazon EC2 Linux instance into a public subnet. The instance is running, and the administrator has its public IP address. However, every attempt to connect remotely (e.g., via SSH) results in a connection timeout error. Which action will allow the SysOps administrator to remotely connect to the instance?",
+                options: {
+                    A: "Add a route table entry in the public subnet for the SysOps administrator's IP address.",
+                    B: "Add an outbound network ACL rule to allow TCP port 22 for the SysOps administrator's IP address.",
+                    C: "Modify the instance security group to allow inbound SSH traffic from the SysOps administrator's IP address.",
+                    D: "Modify the instance security group to allow outbound SSH traffic to the SysOps administrator's IP address."
+                },
+                answer: "C",
+                explanation: "A connection timeout error is a classic sign that a firewall is blocking the traffic. In AWS, the primary firewall protecting an EC2 instance is its Security Group. By default, security groups deny all inbound traffic. To connect to a Linux instance using SSH, you must explicitly allow inbound traffic on TCP port 22 from the administrator's IP address.",
+                wrongExplanation: "<b>A:</b> Route tables control traffic between subnets and to destinations outside the VPC. They don't filter traffic to a specific instance. <br><b>B:</b> The problem is with inbound traffic to the instance, not outbound. Also, the default Network ACL allows all traffic. <br><b>D:</b> The connection attempt is an inbound request to the EC2 instance. An outbound rule controls traffic leaving the instance."
+            },
+            {
+                question: "A company is transitioning a web application from Amazon EC2 instances to an AWS Lambda function. During the migration, they need to route traffic based on the URL path. For example, requests to `/api/v1/...` should go to the old EC2 instances, while requests to `/api/v2/...` should go to the new Lambda function. Which solution will meet these requirements?",
+                options: {
+                    A: "Configure a Gateway Load Balancer.",
+                    B: "Configure a Network Load Balancer.",
+                    C: "Configure a Network Load Balancer with a regular expression.",
+                    D: "Configure an Application Load Balancer."
+                },
+                answer: "D",
+                explanation: "The key requirement is path-based routing, which is a feature of the application layer (Layer 7). An Application Load Balancer (ALB) operates at Layer 7 and is designed for this exact purpose. It can inspect the request's URL path and route traffic to different target groups (like EC2 instances or Lambda functions) based on rules.",
+                wrongExplanation: "<b>A:</b> A Gateway Load Balancer is used to deploy and manage third-party virtual network appliances, not for path-based routing. <br><b>B & C:</b> A Network Load Balancer (NLB) operates at Layer 4 (transport layer) and is not aware of application-level content like URL paths. It cannot perform path-based routing."
+            },
+            {
+                question: "An Auto Scaling group uses a simple scaling policy based on `RequestCountPerTarget`. The metric threshold was breached twice within a 180-second period. The Auto Scaling group is using default settings. How will the number of EC2 instances be affected?",
+                options: {
+                    A: "The Auto Scaling group will launch an additional EC2 instance every time the metric exceeds the limit.",
+                    B: "The Auto Scaling group will launch one EC2 instance and will wait for the default cooldown period before launching another.",
+                    C: "The Auto Scaling group will send an alert to the ALB to rebalance the traffic and not add new instances.",
+                    D: "The Auto Scaling group will try to distribute the traffic among all EC2 instances before launching another instance."
+                },
+                answer: "B",
+                explanation: "Simple scaling policies have a default cooldown period of 300 seconds (5 minutes). After a scaling activity is initiated, the Auto Scaling group will not start another one until this period ends. Since the second breach occurred at 180 seconds, it's within the cooldown period and will be ignored.",
+                wrongExplanation: "<b>A:</b> This describes behavior without a cooldown period, which is incorrect for simple scaling policies. <br><b>C:</b> The Auto Scaling group's primary function is to adjust the number of instances, not to directly instruct the ALB. <br><b>D:</b> The ALB is responsible for distributing traffic; the Auto Scaling group's role is to add or remove instances."
+            },
+            {
+                question: "A company's application uses a single Amazon RDS DB instance and needs an automatic failover solution that does not lose any committed transactions. Which solution will meet these requirements?",
+                options: {
+                    A: "Create an RDS read replica in the same AWS Region.",
+                    B: "Create an RDS read replica in a different AWS Region.",
+                    C: "Modify the DB instance to be a Multi-AZ deployment.",
+                    D: "Set up a CloudWatch alarm to restart the DB instance if memory utilization is high."
+                },
+                answer: "C",
+                explanation: "An RDS Multi-AZ deployment is designed for high availability and automatic failover. It maintains a synchronous standby replica in a different Availability Zone. If the primary fails, RDS automatically fails over to the standby with no data loss for committed transactions (zero RPO).",
+                wrongExplanation: "<b>A & B:</b> Read replicas use asynchronous replication, which can lead to data loss. Also, promoting a read replica is a manual process, not automatic. <br><b>D:</b> This is a monitoring solution, not a high-availability or failover solution. It doesn't protect against an underlying host or AZ failure."
+            },
+            {
+                question: "A company uses AWS Organizations with separate OUs for production and development. A policy dictates that developers can only use a specific list of approved AWS services in the production account. What is the MOST operationally efficient solution to enforce this?",
+                options: {
+                    A: "Create a customer managed policy in IAM and apply it to all users in the production account.",
+                    B: "Create a job function policy in IAM and apply it to all users in the production OU.",
+                    C: "Create a service control policy (SCP). Apply the SCP to the production OU.",
+                    D: "Create an IAM policy and apply it in Amazon API Gateway."
+                },
+                answer: "C",
+                explanation: "Service Control Policies (SCPs) are the correct tool for this. SCPs are applied at the Organizational Unit (OU) or account level and act as a guardrail, defining the maximum permissions available to all users and roles within that account. This is more efficient and secure than managing individual IAM policies for every user.",
+                wrongExplanation: "<b>A & B:</b> Using IAM policies is less efficient and prone to error, as a new user or role could be created without the policy attached. SCPs provide top-down enforcement. <br><b>D:</b> API Gateway is for managing APIs and cannot enforce broad service-level permissions for an entire AWS account."
+            },
+            {
+                question: "A company wants to monitor the number of running EC2 instances and automatically request a service quota increase when the count approaches the current limit. Which solution meets these requirements?",
+                options: {
+                    A: "Create an Amazon CloudWatch alarm to monitor Service Quotas. Configure the alarm to invoke an AWS Lambda function to request a quota increase.",
+                    B: "Create an AWS Config rule to monitor Service Quotas.",
+                    C: "Create an Amazon CloudWatch alarm to monitor the AWS Health Dashboard.",
+                    D: "Create an Amazon CloudWatch alarm to monitor AWS Trusted Advisor and publish to an SNS topic."
+                },
+                answer: "A",
+                explanation: "This solution provides a complete, automated workflow. Service Quotas integrates with CloudWatch, allowing you to create an alarm based on usage. The alarm can then trigger a Lambda function, which uses the AWS SDK to programmatically call the `RequestServiceQuotaIncrease` API action.",
+                wrongExplanation: "<b>B:</b> AWS Config is for auditing resource configurations, not monitoring usage against quotas. <br><b>C:</b> The AWS Health Dashboard provides service health information, not your specific usage data. <br><b>D:</b> An SNS topic by itself cannot perform an action. It can only send notifications. A Lambda function is needed to make the API call."
+            },
+            {
+                question: "A SysOps administrator uses AWS CloudFormation to manage EC2 instances. If the CloudFormation stack is deleted, the EC2 instances and their EBS volumes must be preserved. Which solution will meet these requirements?",
+                options: {
+                    A: "Set the `DeletionPolicy` attribute to `Snapshot` for the EC2 instance resource.",
+                    B: "Automate backups by using Amazon Data Lifecycle Manager (Amazon DLM).",
+                    C: "Create a backup plan in AWS Backup.",
+                    D: "Set the `DeletionPolicy` attribute to `Retain` for the EC2 instance resource."
+                },
+                answer: "D",
+                explanation: "The `DeletionPolicy` is a CloudFormation resource attribute. Setting it to `Retain` instructs CloudFormation to leave the physical resource (the EC2 instance in this case) intact when the stack is deleted. This is the direct, built-in mechanism to achieve the goal.",
+                wrongExplanation: "<b>A:</b> The `Snapshot` policy applies to resources like EBS volumes, not directly to the EC2 instance resource itself. <br><b>B & C:</b> AWS Backup and DLM create backups but do not prevent CloudFormation from deleting the original instance when the stack is deleted. They only provide a way to restore the data later."
+            },
+            {
+                question: "A company runs a MySQL database on a single EC2 instance. What is the MOST operationally efficient solution to minimize both potential data loss and recovery time in case of a failure?",
+                options: {
+                    A: "Create a CloudWatch alarm to stop and start the EC2 instance on failure.",
+                    B: "Create an Amazon RDS for MySQL Multi-AZ DB instance and migrate the data.",
+                    C: "Create an Amazon RDS for MySQL Single-AZ DB instance with a read replica.",
+                    D: "Use Amazon DLM to take an hourly snapshot of the EBS volume."
+                },
+                answer: "B",
+                explanation: "Migrating to a managed service like Amazon RDS with Multi-AZ is the most efficient solution. RDS handles the operational burden of backups, patching, and failover. The Multi-AZ feature provides a hot standby with synchronous replication for minimal data loss (RPO) and fast, automatic failover for minimal recovery time (RTO).",
+                wrongExplanation: "<b>A:</b> This doesn't protect against hardware or AZ failure. <br><b>C:</b> A read replica uses asynchronous replication (potential data loss) and requires manual failover. <br><b>D:</b> Restoring from a snapshot is a slow, manual process with a higher potential for data loss (up to an hour)."
+            },
+            {
+                question: "A SysOps administrator needs to automatically stop development EC2 instances when their average CPU utilization is lower than 5% for 30 minutes. Which solution will meet this requirement?",
+                options: {
+                    A: "Assess AWS CloudTrail logs to verify that there is no EC2 API activity.",
+                    B: "Create an Amazon CloudWatch alarm to stop the EC2 instances when the average CPU utilization is lower than 5% for a 30-minute period.",
+                    C: "Create an Amazon CloudWatch metric to stop the EC2 instances when the `VolumeReadBytes` metric is lower than 500.",
+                    D: "Use AWS Config to invoke a Lambda function to stop the instances."
+                },
+                answer: "B",
+                explanation: "This is a classic use case for CloudWatch Alarms. You can create an alarm based on the `CPUUtilization` metric. Critically, CloudWatch Alarms can be configured to take direct actions on EC2 instances, including `Stop`, `Terminate`, or `Reboot`. This is the simplest and most direct solution.",
+                wrongExplanation: "<b>A:</b> CloudTrail is for auditing API calls, not monitoring real-time performance metrics. <br><b>C:</b> CPU utilization is the required metric, not disk I/O. <br><b>D:</b> AWS Config tracks resource configuration changes, not performance metrics like CPU usage."
+            },
+            {
+                question: "An application using an RDS for MySQL Multi-AZ instance is frequently reporting 'too many connections' errors. What is the MOST cost-effective solution with minimal code changes?",
+                options: {
+                    A: "Modify the RDS for MySQL DB instance to a larger instance size.",
+                    B: "Modify the RDS for MySQL DB instance to Amazon DynamoDB.",
+                    C: "Configure RDS Proxy. Modify the application configuration file to use the RDS Proxy endpoint.",
+                    D: "Modify the RDS for MySQL DB instance to a memory optimized DB instance."
+                },
+                answer: "C",
+                explanation: "RDS Proxy is a fully managed database proxy specifically designed to solve the 'too many connections' problem by pooling and sharing database connections. This improves application scalability without changing the database instance size. The only change required is updating the application's connection endpoint, which meets the 'minimal code changes' requirement.",
+                wrongExplanation: "<b>A & D:</b> Scaling the instance up is a costly solution that doesn't fix the root cause of inefficient connection management. <br><b>B:</b> Migrating from MySQL to DynamoDB would require a complete application rewrite, violating the 'minimal code changes' requirement."
+            }
+        ];
+
+        const quizContent = document.getElementById('quiz-content');
+        const currentScoreEl = document.getElementById('current-score');
+        const totalQuestionsEl = document.getElementById('total-questions');
+        const restartBtn = document.getElementById('restart-btn');
+        
+        let questions = [];
+
+        function buildQuiz() {
+            quizContent.innerHTML = '';
+            totalQuestionsEl.textContent = quizData.length;
+            updateGlobalScore();
+
+            questions = [...quizData].sort(() => Math.random() - 0.5);
+
+            questions.forEach((currentQuestion, questionNumber) => {
+                const options = [];
+                for (let letter in currentQuestion.options) {
+                    options.push(
+                        `<div class="quiz-option">
+                            <label class="block w-full p-4 border-2 border-gray-300 rounded-lg cursor-pointer">
+                                <input type="radio" name="question${questionNumber}" value="${letter}" class="mr-3 align-middle">
+                                <span class="font-bold mr-1">${letter}.</span>
+                                <span class="align-middle">${currentQuestion.options[letter]}</span>
+                            </label>
+                        </div>`
+                    );
+                }
+
+                const questionEl = document.createElement('div');
+                questionEl.classList.add('bg-white', 'p-6', 'rounded-xl', 'shadow-sm', 'question-card');
+                questionEl.dataset.questionIndex = questionNumber;
+
+                questionEl.innerHTML = `
+                    <div class="font-semibold text-lg mb-4">
+                        <span class="font-bold text-blue-600">Question ${questionNumber + 1}:</span>
+                        ${currentQuestion.question}
+                    </div>
+                    <div class="space-y-3 option-group">${options.join('')}</div>
+                    <div class="explanation-box bg-gray-50 rounded-lg">
+                         <div class="p-6">
+                             <div class="explanation-correct"></div>
+                             <div class="explanation-wrong mt-4"></div>
+                         </div>
+                    </div>
+                `;
+                
+                quizContent.appendChild(questionEl);
+            });
+            
+            document.querySelectorAll('.option-group input[type="radio"]').forEach(input => {
+                input.addEventListener('change', handleAnswerSelection);
+            });
+        }
+        
+        function handleAnswerSelection(event) {
+            const selectedInput = event.target;
+            const questionCard = selectedInput.closest('.question-card');
+            const optionGroup = selectedInput.closest('.option-group');
+            
+            const questionIndex = parseInt(questionCard.dataset.questionIndex);
+            const currentQuestion = questions[questionIndex];
+            const userAnswer = selectedInput.value;
+            
+            // Clear previous feedback from all labels in this group
+            optionGroup.querySelectorAll('label').forEach(label => {
+                label.classList.remove('correct-answer', 'incorrect-answer');
+            });
+
+            const selectedLabel = selectedInput.parentElement;
+            const correctLabel = optionGroup.querySelector(`input[value="${currentQuestion.answer}"]`).parentElement;
+
+            // Apply new feedback
+            if (userAnswer === currentQuestion.answer) {
+                selectedLabel.classList.add('correct-answer');
+            } else {
+                selectedLabel.classList.add('incorrect-answer');
+                correctLabel.classList.add('correct-answer');
+            }
+            
+            // Manage explanations
+            const explanationBox = questionCard.querySelector('.explanation-box');
+            const correctExplanationDiv = explanationBox.querySelector('.explanation-correct');
+            const wrongExplanationDiv = explanationBox.querySelector('.explanation-wrong');
+            
+            correctExplanationDiv.innerHTML = `<h4 class="font-bold mb-2 text-gray-800">Explanation:</h4><p class="text-gray-700">${currentQuestion.explanation}</p>`;
+            
+            if (userAnswer !== currentQuestion.answer) {
+                 wrongExplanationDiv.innerHTML = `<h4 class="font-bold mb-2 text-red-700">Why the other options are wrong:</h4><p class="text-gray-700">${currentQuestion.wrongExplanation}</p>`;
+            } else {
+                wrongExplanationDiv.innerHTML = '';
+            }
+
+            explanationBox.classList.add('visible');
+            updateGlobalScore();
+        }
+
+        function updateGlobalScore() {
+            let score = 0;
+            document.querySelectorAll('.question-card').forEach((card, index) => {
+                const selectedInput = card.querySelector('input[type="radio"]:checked');
+                if (selectedInput) {
+                    const questionData = questions[index];
+                    if (selectedInput.value === questionData.answer) {
+                        score++;
+                    }
+                }
+            });
+            currentScoreEl.textContent = score;
+        }
+
+        restartBtn.addEventListener('click', () => {
+             // Scroll to top for a better reset experience
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            // A brief delay to allow scroll to start before rebuilding
+            setTimeout(buildQuiz, 100);
+        });
+        
+        buildQuiz();
+    </script>
+</body>
+</html>
