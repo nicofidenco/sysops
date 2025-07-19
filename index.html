@@ -77,102 +77,92 @@
             {
                 question: "A company hosts a Windows-based file server on EC2 instances across multiple Availability Zones. Application servers are unable to access files simultaneously. Which solution allows simultaneous file access in the MOST operationally efficient way?",
                 answers: [
-                    { text: "Create an Amazon EFS Multi-AZ file system.", correct: false },
-                    { text: "Create an Amazon FSx for Windows File Server Multi-AZ file system.", correct: true },
-                    { text: "Create an EBS volume with Multi-Attach enabled.", correct: false },
-                    { text: "Create two FSx for Windows file systems with DFS replication.", correct: false }
-                ],
-                explanation: "Amazon FSx for Windows File Server is the native, fully managed solution for shared file storage for Windows applications. It supports the SMB protocol and Multi-AZ deployments, making it the most efficient choice for highly available, shared Windows file access."
+                    { text: "Create an Amazon EFS Multi-AZ file system.", correct: false, explanation: "Amazon EFS is designed for Linux-based workloads and uses the NFS protocol. It's not the native or most efficient solution for a Windows environment." },
+                    { text: "Create an Amazon FSx for Windows File Server Multi-AZ file system.", correct: true, explanation: "Correct. Amazon FSx for Windows File Server is a fully managed service that provides shared file storage built on Windows Server, natively supporting the SMB protocol and Multi-AZ deployments." },
+                    { text: "Create an EBS volume with Multi-Attach enabled.", correct: false, explanation: "EBS Multi-Attach allows an EBS volume to be attached to multiple instances, but only within the same Availability Zone, which does not meet the requirement." },
+                    { text: "Create two FSx for Windows file systems with DFS replication.", correct: false, explanation: "While this would work, it is not the most operationally efficient solution. A single Multi-AZ FSx file system handles replication and failover automatically, reducing management overhead." }
+                ]
             },
             {
                 question: "A company needs to automate daily incremental backups for any EBS volume tagged with 'Lifecycle: Production'. A key requirement is to prevent users from deleting these production snapshots. What should a SysOps administrator do?",
                 answers: [
-                    { text: "Use Amazon Data Lifecycle Manager to create daily snapshots.", correct: false },
-                    { text: "Use an SCP to deny snapshot deletion and an EventBridge rule to create snapshots.", correct: false },
-                    { text: "Use AWS Backup with a tag-based policy and Vault Lock.", correct: true },
-                    { text: "Create a daily AMI of every production EC2 instance using DLM.", correct: false }
-                ],
-                explanation: "AWS Backup is a centralized service that can automate tag-based backups. Its 'Backup Vault Lock' feature provides WORM (Write-Once, Read-Many) protection, which directly meets the requirement to prevent deletion of snapshots."
+                    { text: "Use Amazon Data Lifecycle Manager to create daily snapshots.", correct: false, explanation: "Amazon DLM can automate snapshot creation but lacks a feature like Vault Lock to prevent users with appropriate permissions from deleting the snapshots." },
+                    { text: "Use an SCP to deny snapshot deletion and an EventBridge rule to create snapshots.", correct: false, explanation: "This solution is overly complex. A blanket SCP denial could interfere with legitimate operations, and AWS Backup is a more integrated tool for this." },
+                    { text: "Use AWS Backup with a tag-based policy and Vault Lock.", correct: true, explanation: "Correct. AWS Backup is a centralized service that can automate tag-based backups and its 'Backup Vault Lock' feature provides WORM protection, which prevents deletion." },
+                    { text: "Create a daily AMI of every production EC2 instance using DLM.", correct: false, explanation: "The requirement is to back up EBS volumes, not entire EC2 instances. Creating an AMI is unnecessary and backs up more data than required." }
+                ]
             },
             {
                 question: "An application on hundreds of EC2 instances across three AZs needs to call a third-party API that requires a static list of IP addresses for their allow list. Which solution meets this requirement?",
                 answers: [
-                    { text: "Add a NAT gateway in the public subnet of each AZ.", correct: true },
-                    { text: "Allocate one Elastic IP address and associate it with all instances in each AZ.", correct: false },
-                    { text: "Place the instances behind a Network Load Balancer.", correct: false },
-                    { text: "Assign an Elastic IP address to each of the hundreds of instances.", correct: false }
-                ],
-                explanation: "This is the classic architecture for this use case. A NAT Gateway in each AZ provides a static, public IP address for all outbound traffic from instances in the private subnets of that AZ. This results in a small, fixed list of IP addresses (one per AZ) to give to the third party."
+                    { text: "Add a NAT gateway in the public subnet of each AZ.", correct: true, explanation: "Correct. This is the classic architecture. A NAT Gateway in each AZ provides a static, public IP for all outbound traffic from private subnets in that AZ, resulting in a small, fixed list of IPs." },
+                    { text: "Allocate one Elastic IP address and associate it with all instances in each AZ.", correct: false, explanation: "An Elastic IP address can only be associated with one EC2 instance at a time." },
+                    { text: "Place the instances behind a Network Load Balancer.", correct: false, explanation: "Load balancers are designed for managing inbound traffic to your instances, not for routing outbound traffic from them." },
+                    { text: "Assign an Elastic IP address to each of the hundreds of instances.", correct: false, explanation: "This is not operationally efficient, would be costly, and would result in a very long list of IP addresses, defeating the purpose of a simple allow list." }
+                ]
             },
             {
-                question: "A SysOps administrator is hosting a static web app on an S3 bucket. A strict company policy dictates that all S3 buckets must remain private and not be publicly accessible. How can the website be served to users?",
+                question: "A SysOps administrator is hosting a static web app on an S3 bucket. A strict company policy dictates that all S3 buckets must remain private. How can the website be served to users?",
                 answers: [
-                    { text: "Create a CloudFront distribution with an Origin Access Identity (OAI).", correct: true },
-                    { text: "Configure static website hosting in S3 and use a Route 53 CNAME.", correct: false },
-                    { text: "Use an Application Load Balancer to forward traffic to the S3 bucket.", correct: false },
-                    { text: "Use AWS Global Accelerator to forward traffic to the S3 bucket.", correct: false }
-                ],
-                explanation: "This is the standard and most secure method. CloudFront acts as the public entry point. An Origin Access Identity (OAI) is a special CloudFront user that can be granted permission to access the private S3 bucket. The bucket policy is configured to only allow access from the OAI, keeping it private from direct public access."
+                    { text: "Create a CloudFront distribution with an Origin Access Identity (OAI).", correct: true, explanation: "Correct. This is the standard and most secure method. CloudFront acts as the public entry point, and an OAI is a special CloudFront user that can be granted permission to access the private S3 bucket." },
+                    { text: "Configure static website hosting in S3 and use a Route 53 CNAME.", correct: false, explanation: "Configuring static website hosting on an S3 bucket requires the bucket and its objects to be made public, which violates the company policy." },
+                    { text: "Use an Application Load Balancer to forward traffic to the S3 bucket.", correct: false, explanation: "While an ALB can route traffic, it is not the primary or most direct service for serving content from S3 while keeping the bucket private. CloudFront with OAI is the purpose-built solution." },
+                    { text: "Use AWS Global Accelerator to forward traffic to the S3 bucket.", correct: false, explanation: "Global Accelerator is for improving global application availability and performance, not the primary tool for serving content from a private S3 bucket." }
+                ]
             },
             {
                 question: "An application running on an EC2 instance needs to read, write, and delete messages from an SQS queue. Which solution is the MOST secure?",
                 answers: [
-                    { text: "Embed an IAM user's credentials in the application's configuration.", correct: false },
-                    { text: "Use an IAM role with sqs:* permissions.", correct: false },
-                    { text: "Export an IAM user's access keys as environment variables on the instance.", correct: false },
-                    { text: "Use an IAM role with specific SQS permissions (SendMessage, ReceiveMessage, DeleteMessage).", correct: true }
-                ],
-                explanation: "Using an IAM Role attached to the EC2 instance is the most secure method as it avoids long-lived credentials. Furthermore, adhering to the Principle of Least Privilege by granting only the specific permissions required (SendMessage, ReceiveMessage, DeleteMessage) minimizes the potential impact if the instance were ever compromised."
+                    { text: "Embed an IAM user's credentials in the application's configuration.", correct: false, explanation: "This is a significant security risk. If the instance is compromised, the attacker gains access to long-lived keys. IAM roles are the recommended alternative." },
+                    { text: "Use an IAM role with sqs:* permissions.", correct: false, explanation: "While using an IAM role is correct, this option violates the principle of least privilege by using a wildcard (sqs:*), granting far more permissions than needed." },
+                    { text: "Export an IAM user's access keys as environment variables on the instance.", correct: false, explanation: "This is also a security risk involving long-lived credentials. IAM roles avoid storing static keys on the instance." },
+                    { text: "Use an IAM role with specific SQS permissions (SendMessage, ReceiveMessage, DeleteMessage).", correct: true, explanation: "Correct. This follows two key best practices: using an IAM Role for temporary, managed credentials, and adhering to the Principle of Least Privilege by granting only the specific permissions required." }
+                ]
             },
-            {
-                question: "A CloudFront distribution uses an ALB as an origin. After a week, monitoring shows requests are still hitting the ALB directly, and there's no change in web server load. What is a possible cause?",
+             {
+                question: "A company is building a financial application that stores sensitive data in Amazon S3. The data must be encrypted at rest. The company does not want to manage its own encryption keys but requires an audit trail of when and by whom the keys are used. Which solution will meet these requirements?",
                 answers: [
-                    { text: "The ALB security group is not permitting inbound traffic from CloudFront.", correct: false },
-                    { text: "The DNS is still pointing to the ALB instead of the CloudFront distribution.", correct: true },
-                    { text: "CloudFront is missing an Origin Access Identity configuration for the ALB.", correct: false },
-                    { text: "The target groups associated with the ALB are configured for sticky sessions.", correct: false }
-                ],
-                explanation: "If the public DNS record (e.g., www.example.com) still points directly to the ALB's DNS name, users will bypass CloudFront entirely. For CloudFront to serve traffic, the public DNS record must be updated to point to the CloudFront distribution's domain name."
-            },
-            {
-                question: "An RDS for PostgreSQL DB cluster has automated backups enabled. A SysOps administrator needs to create a new, separate DB cluster using data that is no more than 24 hours old. What is a method with LEAST operational overhead?",
-                answers: [
-                    { text: "Use AWS DMS to migrate the data to a new cluster.", correct: false },
-                    { text: "Back up the database to S3 using native tools, then restore.", correct: false },
-                    { text: "Identify the most recent automated snapshot and restore it to a new cluster.", correct: true },
-                    { text: "Use pg_dump to export data to an EC2 instance, then use pg_restore.", correct: false }
-                ],
-                explanation: "Restoring from the most recent automated snapshot is a simple, built-in RDS feature that can be done with a few clicks or a single API call. This represents very low operational overhead compared to manual backups or using a more complex service like DMS for a simple clone operation."
-            },
-            {
-                question: "A user, authenticated via federation, attempts to deploy a CloudFormation template that creates an S3 bucket, but the stack creation fails. What is a likely cause of this failure?",
-                answers: [
-                    { text: "The user's IAM policy does not allow the cloudformation:CreateStack action.", correct: true },
-                    { text: "The user's IAM policy explicitly denies the s3:ListBucket action.", correct: false },
-                    { text: "The user's IAM policy does not allow the cloudformation:CreateStackSet action.", correct: false },
-                    { text: "The user's IAM policy explicitly denies the s3:PutObject action.", correct: false }
-                ],
-                explanation: "When deploying a CloudFormation stack, the user needs two sets of permissions: permission to interact with CloudFormation itself (like cloudformation:CreateStack) and permissions for CloudFormation to create the resources in the template (like s3:CreateBucket). A failure in either will cause the stack creation to fail."
-            },
-            {
-                question: "A financial application stores sensitive data in S3. The data must be encrypted at rest, the company does not want to manage its own keys, but it requires an audit trail of key usage. Which solution meets these requirements?",
-                answers: [
-                    { text: "Use client-side encryption with client-provided keys.", correct: false },
-                    { text: "Use server-side encryption with S3 managed keys (SSE-S3).", correct: false },
-                    { text: "Use server-side encryption with AWS KMS managed keys (SSE-KMS).", correct: true },
-                    { text: "Use server-side encryption with customer-provided keys (SSE-C).", correct: false }
-                ],
-                explanation: "SSE-KMS meets both requirements. AWS manages the keys, but the customer retains control over the key policy. Crucially, every use of the KMS key to encrypt or decrypt an S3 object is logged in AWS CloudTrail, providing the required detailed audit trail."
+                    { text: "Use client-side encryption with client-provided keys.", correct: false, explanation: "This option involves the company managing their own encryption keys, which violates the requirement." },
+                    { text: "Use server-side encryption with S3 managed encryption keys (SSE-S3).", correct: false, explanation: "SSE-S3 is simple, but it does not provide a detailed CloudTrail audit log for the usage of the data keys, which is a key requirement." },
+                    { text: "Use server-side encryption with customer-provided encryption keys (SSE-C).", correct: false, explanation: "This option involves the company providing and managing their own encryption keys, which violates the requirement." },
+                    { text: "Use server-side encryption with AWS KMS managed encryption keys (SSE-KMS).", correct: true, explanation: "Correct. SSE-KMS meets both requirements. AWS manages the keys, and every use of the key is logged in AWS CloudTrail, providing the required audit trail." }
+                ]
             },
             {
                 question: "A company uses AWS Organizations and needs to automate provisioning the same set of resources from the management account to multiple member accounts. Which solution will meet this requirement?",
                 answers: [
-                    { text: "Create a CloudFormation change set.", correct: false },
-                    { text: "Create a CloudFormation nested stack.", correct: false },
-                    { text: "Create an AWS Serverless Application Model (AWS SAM) template.", correct: false },
-                    { text: "Create a CloudFormation StackSet.", correct: true }
-                ],
-                explanation: "AWS CloudFormation StackSets are designed for this exact purpose. A StackSet allows you to create, update, or delete stacks across multiple accounts and regions with a single operation from a central management account."
+                    { text: "Create a CloudFormation change set.", correct: false, explanation: "A change set is a preview of the changes a template will make to a single stack. It does not deploy anything across multiple accounts." },
+                    { text: "Create a CloudFormation nested stack.", correct: false, explanation: "A nested stack is a way to reuse common template components within a single parent stack, not for deploying across accounts." },
+                    { text: "Create an AWS Serverless Application Model (AWS SAM) template.", correct: false, explanation: "AWS SAM is an extension of CloudFormation for serverless applications and doesn't inherently provide multi-account deployment capabilities." },
+                    { text: "Create a CloudFormation StackSet.", correct: true, explanation: "Correct. AWS CloudFormation StackSets are designed for this exact purpose, allowing you to create, update, or delete stacks across multiple accounts and regions with a single operation." }
+                ]
+            },
+            {
+                question: "A SysOps administrator has created a custom AMI in the eu-west-2 Region. They need to use this same AMI to launch EC2 instances in us-east-1 and us-east-2. What must be done?",
+                answers: [
+                    { text: "Copy the AMI to the additional Regions.", correct: true, explanation: "Correct. AMIs are a regional resource. To use an AMI in another Region, you must explicitly copy it to the target Region. This creates a new, independent AMI in the destination." },
+                    { text: "Make the AMI public in the Community AMIs section.", correct: false, explanation: "Making an AMI public would allow other accounts to use it, but it would still only be available within the Region where it was created." },
+                    { text: "Share the AMI to the additional Regions.", correct: false, explanation: "Sharing an AMI allows other AWS accounts to use your private AMI, but this sharing is confined to the Region where the AMI exists. You cannot 'share' an AMI to another Region." },
+                    { text: "Copy the AMI to a new S3 bucket and assign permissions.", correct: false, explanation: "This is not the correct procedure. While an AMI's snapshot is stored in S3, you must use the 'Copy AMI' action to make it available in another region." }
+                ]
+            },
+            {
+                question: "A website on a single EC2 instance in a public subnet is unreachable. The security group allows inbound HTTP, and a new NACL also allows inbound HTTP. What is the cause?",
+                answers: [
+                    { text: "The new network ACL is missing an outbound rule for ephemeral port return traffic.", correct: true, explanation: "Correct. Network ACLs are stateless. You must define rules for both inbound and outbound traffic. The response traffic from the server to the user uses a random ephemeral port, so an outbound rule is required to allow this return traffic." },
+                    { text: "The security group is missing an outbound rule for HTTP.", correct: false, explanation: "Security Groups are stateful. If you allow inbound traffic on a port, the corresponding return traffic is automatically allowed, regardless of outbound rules." },
+                    { text: "The Elastic IP address assigned to the EC2 instance has changed.", correct: false, explanation: "Elastic IP addresses are static by definition and do not change unless you explicitly disassociate or release them." },
+                    { text: "An additional network ACL is denying traffic.", correct: false, explanation: "A subnet can only have one NACL associated with it at a time. Applying a new NACL replaces the previous one." }
+                ]
+            },
+            {
+                question: "A company wants a solution that continuously monitors S3 bucket logging settings and automatically remediates any bucket that does not have logging enabled. What is the MOST efficient solution?",
+                answers: [
+                    { text: "Track with CloudTrail and use a Lambda function for remediation.", correct: false, explanation: "While possible, this is reinventing the wheel. AWS Config provides this functionality out of the box and is more efficient." },
+                    { text: "Use AWS Trusted Advisor to monitor and turn on logging.", correct: false, explanation: "Trusted Advisor provides recommendations but does not offer automated remediation capabilities. It can identify the problem but cannot fix it." },
+                    { text: "Configure automatic remediation in AWS Config using the s3-bucket-logging-enabled rule.", correct: true, explanation: "Correct. AWS Config is designed for this. It has a managed rule to check for logging and supports automatic remediation to fix non-compliant resources, making it the most efficient solution." },
+                    { text: "Track with CloudWatch metrics and use a Lambda function for remediation.", correct: false, explanation: "This is a custom solution that is less efficient than using the purpose-built AWS Config service for compliance and remediation." }
+                ]
             }
         ];
 
@@ -217,13 +207,11 @@
             resetState();
             const currentQuestion = questions[currentQuestionIndex];
             questionText.textContent = currentQuestion.question;
-            currentQuestion.answers.forEach(answer => {
+            currentQuestion.answers.forEach((answer, index) => {
                 const button = document.createElement('button');
                 button.textContent = answer.text;
                 button.classList.add('answer-btn', 'w-full', 'text-left', 'p-4', 'rounded-lg', 'border-2', 'border-gray-300', 'bg-white', 'text-gray-700', 'hover:bg-gray-50');
-                if (answer.correct) {
-                    button.dataset.correct = answer.correct;
-                }
+                button.dataset.index = index; // Use index to find the answer object later
                 button.addEventListener('click', selectAnswer);
                 answerButtons.appendChild(button);
             });
@@ -239,14 +227,22 @@
 
         function selectAnswer(e) {
             const selectedBtn = e.target;
-            const isCorrect = selectedBtn.dataset.correct === 'true';
-            const isFirstAttempt = !questions[currentQuestionIndex].answered;
+            const answerIndex = parseInt(selectedBtn.dataset.index);
+            const currentQuestion = questions[currentQuestionIndex];
+            const selectedAnswer = currentQuestion.answers[answerIndex];
+            const isCorrect = selectedAnswer.correct;
+            const isFirstAttempt = !currentQuestion.answered;
 
-            // Only score the first attempt
+            // Only score the first correct attempt
             if (isCorrect && isFirstAttempt) {
                 score++;
             }
-            questions[currentQuestionIndex].answered = true;
+            
+            // Mark question as answered and show Next button on first attempt
+            if (isFirstAttempt) {
+                currentQuestion.answered = true;
+                nextBtn.classList.remove('hidden');
+            }
 
             // Reset styles on all buttons before applying new ones
             Array.from(answerButtons.children).forEach(button => {
@@ -259,16 +255,15 @@
             }
 
             // Always highlight the correct answer
-            Array.from(answerButtons.children).forEach(button => {
-                if (button.dataset.correct === 'true') {
+            Array.from(answerButtons.children).forEach((button, index) => {
+                if (currentQuestion.answers[index].correct) {
                     button.classList.add('correct');
                 }
             });
             
-            // Show explanation and next button
-            explanationText.textContent = questions[currentQuestionIndex].explanation;
+            // Show explanation for the selected answer
+            explanationText.textContent = selectedAnswer.explanation;
             feedbackArea.classList.remove('hidden');
-            nextBtn.classList.remove('hidden');
             updateProgress();
         }
 
@@ -299,4 +294,3 @@
     </script>
 </body>
 </html>
-
