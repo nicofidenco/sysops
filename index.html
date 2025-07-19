@@ -1,1 +1,302 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AWS SysOps Quiz</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .quiz-container {
+            max-width: 800px;
+            width: 95%;
+        }
+        .answer-btn {
+            transition: all 0.2s ease-in-out;
+        }
+        .answer-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+        .correct {
+            background-color: #10B981 !important; /* Tailwind green-500 */
+            color: white !important;
+            border-color: #059669 !important;
+        }
+        .incorrect {
+            background-color: #EF4444 !important; /* Tailwind red-500 */
+            color: white !important;
+            border-color: #DC2626 !important;
+        }
+        .explanation {
+            border-left: 4px solid #3B82F6; /* Tailwind blue-500 */
+        }
+    </style>
+</head>
+<body class="bg-gray-100 flex items-center justify-center min-h-screen">
+
+    <div id="quiz-container" class="quiz-container bg-white p-6 sm:p-8 rounded-2xl shadow-lg">
+        <div id="quiz-header" class="mb-6">
+            <h1 class="text-2xl sm:text-3xl font-bold text-gray-800 text-center">AWS SysOps Administrator Quiz</h1>
+            <div id="progress-info" class="flex justify-between items-center mt-4 text-gray-600">
+                <span id="question-counter"></span>
+                <span id="score"></span>
+            </div>
+        </div>
+
+        <div id="question-area">
+            <p id="question-text" class="text-lg text-gray-700 mb-6 leading-relaxed"></p>
+            <div id="answer-buttons" class="grid grid-cols-1 gap-4">
+                <!-- Answer buttons will be generated here -->
+            </div>
+        </div>
+
+        <div id="feedback-area" class="mt-6 hidden">
+            <div id="explanation" class="explanation bg-blue-50 p-4 rounded-lg">
+                <h3 class="font-bold text-lg mb-2 text-gray-800">Explanation</h3>
+                <p id="explanation-text" class="text-gray-700"></p>
+            </div>
+        </div>
+
+        <div id="navigation-area" class="mt-8 flex justify-end">
+            <button id="next-btn" class="bg-blue-600 text-white font-semibold py-2 px-6 rounded-lg shadow-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 transition hidden">Next Question</button>
+        </div>
+
+        <div id="results-area" class="hidden text-center">
+            <h2 class="text-2xl font-bold text-gray-800 mb-4">Quiz Complete!</h2>
+            <p id="final-score" class="text-xl text-gray-700 mb-6"></p>
+            <button id="restart-btn" class="bg-green-600 text-white font-semibold py-3 px-8 rounded-lg shadow-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-50 transition">Restart Quiz</button>
+        </div>
+    </div>
+
+    <script>
+        const questions = [
+            {
+                question: "A company hosts a Windows-based file server on EC2 instances across multiple Availability Zones. Application servers are unable to access files simultaneously. Which solution allows simultaneous file access in the MOST operationally efficient way?",
+                answers: [
+                    { text: "Create an Amazon EFS Multi-AZ file system.", correct: false },
+                    { text: "Create an Amazon FSx for Windows File Server Multi-AZ file system.", correct: true },
+                    { text: "Create an EBS volume with Multi-Attach enabled.", correct: false },
+                    { text: "Create two FSx for Windows file systems with DFS replication.", correct: false }
+                ],
+                explanation: "Amazon FSx for Windows File Server is the native, fully managed solution for shared file storage for Windows applications. It supports the SMB protocol and Multi-AZ deployments, making it the most efficient choice for highly available, shared Windows file access."
+            },
+            {
+                question: "A company needs to automate daily incremental backups for any EBS volume tagged with 'Lifecycle: Production'. A key requirement is to prevent users from deleting these production snapshots. What should a SysOps administrator do?",
+                answers: [
+                    { text: "Use Amazon Data Lifecycle Manager to create daily snapshots.", correct: false },
+                    { text: "Use an SCP to deny snapshot deletion and an EventBridge rule to create snapshots.", correct: false },
+                    { text: "Use AWS Backup with a tag-based policy and Vault Lock.", correct: true },
+                    { text: "Create a daily AMI of every production EC2 instance using DLM.", correct: false }
+                ],
+                explanation: "AWS Backup is a centralized service that can automate tag-based backups. Its 'Backup Vault Lock' feature provides WORM (Write-Once, Read-Many) protection, which directly meets the requirement to prevent deletion of snapshots."
+            },
+            {
+                question: "An application on hundreds of EC2 instances across three AZs needs to call a third-party API that requires a static list of IP addresses for their allow list. Which solution meets this requirement?",
+                answers: [
+                    { text: "Add a NAT gateway in the public subnet of each AZ.", correct: true },
+                    { text: "Allocate one Elastic IP address and associate it with all instances in each AZ.", correct: false },
+                    { text: "Place the instances behind a Network Load Balancer.", correct: false },
+                    { text: "Assign an Elastic IP address to each of the hundreds of instances.", correct: false }
+                ],
+                explanation: "This is the classic architecture for this use case. A NAT Gateway in each AZ provides a static, public IP address for all outbound traffic from instances in the private subnets of that AZ. This results in a small, fixed list of IP addresses (one per AZ) to give to the third party."
+            },
+            {
+                question: "A SysOps administrator is hosting a static web app on an S3 bucket. A strict company policy dictates that all S3 buckets must remain private and not be publicly accessible. How can the website be served to users?",
+                answers: [
+                    { text: "Create a CloudFront distribution with an Origin Access Identity (OAI).", correct: true },
+                    { text: "Configure static website hosting in S3 and use a Route 53 CNAME.", correct: false },
+                    { text: "Use an Application Load Balancer to forward traffic to the S3 bucket.", correct: false },
+                    { text: "Use AWS Global Accelerator to forward traffic to the S3 bucket.", correct: false }
+                ],
+                explanation: "This is the standard and most secure method. CloudFront acts as the public entry point. An Origin Access Identity (OAI) is a special CloudFront user that can be granted permission to access the private S3 bucket. The bucket policy is configured to only allow access from the OAI, keeping it private from direct public access."
+            },
+            {
+                question: "An application running on an EC2 instance needs to read, write, and delete messages from an SQS queue. Which solution is the MOST secure?",
+                answers: [
+                    { text: "Embed an IAM user's credentials in the application's configuration.", correct: false },
+                    { text: "Use an IAM role with sqs:* permissions.", correct: false },
+                    { text: "Export an IAM user's access keys as environment variables on the instance.", correct: false },
+                    { text: "Use an IAM role with specific SQS permissions (SendMessage, ReceiveMessage, DeleteMessage).", correct: true }
+                ],
+                explanation: "Using an IAM Role attached to the EC2 instance is the most secure method as it avoids long-lived credentials. Furthermore, adhering to the Principle of Least Privilege by granting only the specific permissions required (SendMessage, ReceiveMessage, DeleteMessage) minimizes the potential impact if the instance were ever compromised."
+            },
+            {
+                question: "A CloudFront distribution uses an ALB as an origin. After a week, monitoring shows requests are still hitting the ALB directly, and there's no change in web server load. What is a possible cause?",
+                answers: [
+                    { text: "The ALB security group is not permitting inbound traffic from CloudFront.", correct: false },
+                    { text: "The DNS is still pointing to the ALB instead of the CloudFront distribution.", correct: true },
+                    { text: "CloudFront is missing an Origin Access Identity configuration for the ALB.", correct: false },
+                    { text: "The target groups associated with the ALB are configured for sticky sessions.", correct: false }
+                ],
+                explanation: "If the public DNS record (e.g., www.example.com) still points directly to the ALB's DNS name, users will bypass CloudFront entirely. For CloudFront to serve traffic, the public DNS record must be updated to point to the CloudFront distribution's domain name."
+            },
+            {
+                question: "An RDS for PostgreSQL DB cluster has automated backups enabled. A SysOps administrator needs to create a new, separate DB cluster using data that is no more than 24 hours old. What is a method with LEAST operational overhead?",
+                answers: [
+                    { text: "Use AWS DMS to migrate the data to a new cluster.", correct: false },
+                    { text: "Back up the database to S3 using native tools, then restore.", correct: false },
+                    { text: "Identify the most recent automated snapshot and restore it to a new cluster.", correct: true },
+                    { text: "Use pg_dump to export data to an EC2 instance, then use pg_restore.", correct: false }
+                ],
+                explanation: "Restoring from the most recent automated snapshot is a simple, built-in RDS feature that can be done with a few clicks or a single API call. This represents very low operational overhead compared to manual backups or using a more complex service like DMS for a simple clone operation."
+            },
+            {
+                question: "A user, authenticated via federation, attempts to deploy a CloudFormation template that creates an S3 bucket, but the stack creation fails. What is a likely cause of this failure?",
+                answers: [
+                    { text: "The user's IAM policy does not allow the cloudformation:CreateStack action.", correct: true },
+                    { text: "The user's IAM policy explicitly denies the s3:ListBucket action.", correct: false },
+                    { text: "The user's IAM policy does not allow the cloudformation:CreateStackSet action.", correct: false },
+                    { text: "The user's IAM policy explicitly denies the s3:PutObject action.", correct: false }
+                ],
+                explanation: "When deploying a CloudFormation stack, the user needs two sets of permissions: permission to interact with CloudFormation itself (like cloudformation:CreateStack) and permissions for CloudFormation to create the resources in the template (like s3:CreateBucket). A failure in either will cause the stack creation to fail."
+            },
+            {
+                question: "A financial application stores sensitive data in S3. The data must be encrypted at rest, the company does not want to manage its own keys, but it requires an audit trail of key usage. Which solution meets these requirements?",
+                answers: [
+                    { text: "Use client-side encryption with client-provided keys.", correct: false },
+                    { text: "Use server-side encryption with S3 managed keys (SSE-S3).", correct: false },
+                    { text: "Use server-side encryption with AWS KMS managed keys (SSE-KMS).", correct: true },
+                    { text: "Use server-side encryption with customer-provided keys (SSE-C).", correct: false }
+                ],
+                explanation: "SSE-KMS meets both requirements. AWS manages the keys, but the customer retains control over the key policy. Crucially, every use of the KMS key to encrypt or decrypt an S3 object is logged in AWS CloudTrail, providing the required detailed audit trail."
+            },
+            {
+                question: "A company uses AWS Organizations and needs to automate provisioning the same set of resources from the management account to multiple member accounts. Which solution will meet this requirement?",
+                answers: [
+                    { text: "Create a CloudFormation change set.", correct: false },
+                    { text: "Create a CloudFormation nested stack.", correct: false },
+                    { text: "Create an AWS Serverless Application Model (AWS SAM) template.", correct: false },
+                    { text: "Create a CloudFormation StackSet.", correct: true }
+                ],
+                explanation: "AWS CloudFormation StackSets are designed for this exact purpose. A StackSet allows you to create, update, or delete stacks across multiple accounts and regions with a single operation from a central management account."
+            }
+        ];
+
+        // DOM Elements
+        const questionText = document.getElementById('question-text');
+        const answerButtons = document.getElementById('answer-buttons');
+        const nextBtn = document.getElementById('next-btn');
+        const restartBtn = document.getElementById('restart-btn');
+        const questionCounter = document.getElementById('question-counter');
+        const scoreDisplay = document.getElementById('score');
+        const resultsArea = document.getElementById('results-area');
+        const finalScoreText = document.getElementById('final-score');
+        const quizHeader = document.getElementById('quiz-header');
+        const questionArea = document.getElementById('question-area');
+        const feedbackArea = document.getElementById('feedback-area');
+        const explanationText = document.getElementById('explanation-text');
+
+        // Quiz State
+        let currentQuestionIndex = 0;
+        let score = 0;
+
+        function startQuiz() {
+            // Add an 'answered' flag to each question for scoring first attempts
+            questions.forEach(q => q.answered = false);
+            currentQuestionIndex = 0;
+            score = 0;
+            resultsArea.classList.add('hidden');
+            quizHeader.classList.remove('hidden');
+            questionArea.classList.remove('hidden');
+            feedbackArea.classList.add('hidden');
+            nextBtn.classList.add('hidden');
+            updateProgress();
+            showQuestion();
+        }
+
+        function updateProgress() {
+            questionCounter.textContent = `Question ${currentQuestionIndex + 1} of ${questions.length}`;
+            scoreDisplay.textContent = `Score: ${score}`;
+        }
+
+        function showQuestion() {
+            resetState();
+            const currentQuestion = questions[currentQuestionIndex];
+            questionText.textContent = currentQuestion.question;
+            currentQuestion.answers.forEach(answer => {
+                const button = document.createElement('button');
+                button.textContent = answer.text;
+                button.classList.add('answer-btn', 'w-full', 'text-left', 'p-4', 'rounded-lg', 'border-2', 'border-gray-300', 'bg-white', 'text-gray-700', 'hover:bg-gray-50');
+                if (answer.correct) {
+                    button.dataset.correct = answer.correct;
+                }
+                button.addEventListener('click', selectAnswer);
+                answerButtons.appendChild(button);
+            });
+        }
+
+        function resetState() {
+            nextBtn.classList.add('hidden');
+            feedbackArea.classList.add('hidden');
+            while (answerButtons.firstChild) {
+                answerButtons.removeChild(answerButtons.firstChild);
+            }
+        }
+
+        function selectAnswer(e) {
+            const selectedBtn = e.target;
+            const isCorrect = selectedBtn.dataset.correct === 'true';
+            const isFirstAttempt = !questions[currentQuestionIndex].answered;
+
+            // Only score the first attempt
+            if (isCorrect && isFirstAttempt) {
+                score++;
+            }
+            questions[currentQuestionIndex].answered = true;
+
+            // Reset styles on all buttons before applying new ones
+            Array.from(answerButtons.children).forEach(button => {
+                button.classList.remove('correct', 'incorrect');
+            });
+            
+            // Apply style to the selected button if it's incorrect
+            if (!isCorrect) {
+                selectedBtn.classList.add('incorrect');
+            }
+
+            // Always highlight the correct answer
+            Array.from(answerButtons.children).forEach(button => {
+                if (button.dataset.correct === 'true') {
+                    button.classList.add('correct');
+                }
+            });
+            
+            // Show explanation and next button
+            explanationText.textContent = questions[currentQuestionIndex].explanation;
+            feedbackArea.classList.remove('hidden');
+            nextBtn.classList.remove('hidden');
+            updateProgress();
+        }
+
+        function showResults() {
+            quizHeader.classList.add('hidden');
+            questionArea.classList.add('hidden');
+            feedbackArea.classList.add('hidden');
+            nextBtn.classList.add('hidden');
+            resultsArea.classList.remove('hidden');
+            const percentage = Math.round((score / questions.length) * 100);
+            finalScoreText.innerHTML = `You scored <span class="font-bold text-blue-600">${score}</span> out of <span class="font-bold text-blue-600">${questions.length}</span> (${percentage}%)`;
+        }
+        
+        nextBtn.addEventListener('click', () => {
+            currentQuestionIndex++;
+            if (currentQuestionIndex < questions.length) {
+                updateProgress();
+                showQuestion();
+            } else {
+                showResults();
+            }
+        });
+
+        restartBtn.addEventListener('click', startQuiz);
+        
+        // Initial start
+        startQuiz();
+    </script>
+</body>
+</html>
 
