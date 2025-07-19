@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive AWS SysOps Quiz</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .quiz-option label {
+            transition: all 0.2s ease-in-out;
+        }
+        .quiz-option label:hover {
+            background-color: #f0f4f8;
+            border-color: #a5b4fc;
+        }
+        .correct-answer {
+             background-color: #dcfce7 !important;
+             border-color: #22c55e !important;
+        }
+        .incorrect-answer {
+             background-color: #fee2e2 !important;
+             border-color: #ef4444 !important;
+        }
+        .explanation-box {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.7s ease-in-out, padding 0.7s ease-in-out, margin 0.7s ease-in-out;
+            padding: 0 1.5rem;
+        }
+        .explanation-box.visible {
+            max-height: 1000px; /* Increased to accommodate more text */
+            padding: 1.5rem;
+            margin-top: 1rem;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 text-gray-800">
+
+    <div id="quiz-container" class="max-w-4xl mx-auto p-4 sm:p-6 md:p-8">
+        <header class="mb-8 text-center sticky top-0 bg-gray-100/80 backdrop-blur-sm py-4 z-10">
+            <h1 class="text-3xl sm:text-4xl font-bold text-gray-900">Interactive AWS SysOps Quiz</h1>
+            <p class="mt-2 text-md text-gray-600">Select an answer to see the explanation. You can change your answers.</p>
+            <div id="score-container" class="mt-4 text-2xl font-bold text-gray-700">
+                Score: <span id="current-score">0</span> / <span id="total-questions">0</span>
+            </div>
+        </header>
+
+        <div id="quiz-content" class="space-y-8">
+            <!-- Questions will be dynamically inserted here -->
+        </div>
+        
+        <div class="mt-10 text-center">
+            <button id="restart-btn" class="bg-blue-600 text-white font-bold py-3 px-8 rounded-lg shadow-md hover:bg-blue-700 transition-transform transform hover:scale-105 focus:outline-none focus:ring-4 focus:ring-blue-300">
+                Reset Quiz
+            </button>
+        </div>
+
+    </div>
+
+    <script>
+        const quizData = [
+            {
+                question: "A company wants to ensure that developers cannot launch EC2 instances larger than the `t3.large` type in the development OU. Which is the MOST effective way to enforce this policy?",
+                options: {
+                    A: "Use AWS Budgets to send an alert when a large instance is launched.",
+                    B: "Create an IAM policy with a condition that checks the `ec2:InstanceType` and attach it to all developer roles.",
+                    C: "Create a Service Control Policy (SCP) that denies the `RunInstances` action if the `ec2:InstanceType` is not on an approved list.",
+                    D: "Use AWS Config to terminate non-compliant instances."
+                },
+                answer: "C",
+                explanation: "Service Control Policies (SCPs) are the ideal tool for setting broad, preventative guardrails across an organization or OU. An SCP can explicitly deny an action (like `ec2:RunInstances`) if a condition (like the instance type being something other than `t3.large`) is met. This is more robust than IAM policies because it applies to all users and roles in the OU, including administrators.",
+                wrongExplanation: "<b>A:</b> AWS Budgets are for cost management and send alerts after the fact; they don't prevent actions. <br><b>B:</b> Managing IAM policies for every developer role is less efficient and can be bypassed if a new role is created without the policy. <br><b>D:</b> AWS Config is a detective control that identifies non-compliance after it occurs. An SCP is a preventative control, which is more effective."
+            },
+            {
+                question: "A SysOps administrator needs to provide a database credentials to an application running on an EC2 instance securely, with automatic rotation. What is the recommended AWS service to use?",
+                options: {
+                    A: "Store the credentials in an encrypted text file on the instance.",
+                    B: "AWS Secrets Manager",
+                    C: "AWS Systems Manager Parameter Store Standard Tier",
+                    D: "IAM database authentication"
+                },
+                answer: "B",
+                explanation: "AWS Secrets Manager is a dedicated service for managing secrets, including database credentials. It provides fine-grained access control using IAM policies and, most importantly, has built-in capabilities to automatically rotate secrets on a schedule for supported databases (like RDS). This eliminates the need for developers to manage credentials manually.",
+                wrongExplanation: "<b>A:</b> Storing credentials in a file on the instance is insecure. <br><b>C:</b> While Parameter Store can store secrets, the Standard Tier does not offer automatic rotation; that is a feature of the Advanced Tier. Secrets Manager is the service purpose-built for this with rotation integrated. <br><b>D:</b> IAM database authentication is a great option for RDS, but Secrets Manager is a more general-purpose solution for managing any type of secret, not just database credentials, and directly supports rotation."
+            },
+            {
+                question: "An application is writing data to an Amazon Kinesis Data Stream. The consuming application, running on EC2, is not keeping up with the volume of data. The `GetRecords.IteratorAgeMilliseconds` metric in CloudWatch is steadily increasing. What is the MOST likely cause?",
+                options: {
+                    A: "The Kinesis Data Stream needs more shards.",
+                    B: "The EC2 instances do not have enough network bandwidth.",
+                    C: "The consuming application is processing records too slowly.",
+                    D: "The IAM role for the EC2 instances is missing permissions."
+                },
+                answer: "A",
+                explanation: "The `IteratorAgeMilliseconds` metric represents how old the last record returned from a `GetRecords` call is. A high and increasing value is a classic indicator that the consumer application is falling behind the data being written to the stream. The capacity of a Kinesis stream is determined by its number of shards. To increase the processing capacity and allow the consumer to catch up, you need to increase the number of shards in the stream.",
+                wrongExplanation: "<b>B:</b> While possible, it's less likely than a shard capacity issue. The primary bottleneck in Kinesis is typically shard throughput. <br><b>C:</b> While the application is indeed processing records too slowly, the *reason* it can't keep up is the stream's capacity limit. The solution is to increase that capacity by adding shards. <br><b>D:</b> Missing permissions would likely result in errors and no records being processed at all, not a gradually increasing iterator age."
+            },
+            {
+                question: "A SysOps administrator needs to create a cost-effective and durable storage solution for archiving data that is rarely accessed but must be retrievable within 3-5 hours when needed. Which S3 storage class should be used?",
+                options: {
+                    A: "S3 Standard",
+                    B: "S3 Intelligent-Tiering",
+                    C: "S3 Glacier Flexible Retrieval",
+                    D: "S3 Glacier Deep Archive"
+                },
+                answer: "C",
+                explanation: "S3 Glacier Flexible Retrieval (formerly S3 Glacier) is designed for long-term archival of data that is infrequently accessed. It offers a low storage price and provides retrieval options from minutes to hours. The standard retrieval time is 3-5 hours, which perfectly matches the requirement.",
+                wrongExplanation: "<b>A:</b> S3 Standard is for frequently accessed data and is not cost-effective for archiving. <br><b>B:</b> S3 Intelligent-Tiering is for data with unknown or changing access patterns; it's more expensive than Glacier for pure archival. <br><b>D:</b> S3 Glacier Deep Archive is the lowest-cost storage, but its standard retrieval time is 12 hours, which is longer than the requirement."
+            },
+            {
+                question: "A company's security team requires that all data in transit between clients and an Application Load Balancer (ALB) must use strong encryption protocols. How can a SysOps administrator enforce this?",
+                options: {
+                    A: "Configure the EC2 instance security groups to only allow TLS 1.2.",
+                    B: "Create a WAF rule to block older TLS versions.",
+                    C: "Attach a security policy to the ALB's HTTPS listener.",
+                    D: "Use AWS Shield Advanced to enforce encryption standards."
+                },
+                answer: "C",
+                explanation: "Application Load Balancers have predefined security policies that you can attach to an HTTPS listener. These policies define the SSL/TLS ciphers and protocols that the load balancer will negotiate with clients. By selecting a modern policy, such as `ELBSecurityPolicy-TLS-1-2-Ext-2018-06`, you can enforce the use of strong protocols like TLS 1.2 and disable older, less secure ones.",
+                wrongExplanation: "<b>A:</b> Security groups operate at the transport layer (TCP/UDP) and are not aware of application-layer protocols like TLS. <br><b>B:</b> While WAF can inspect some parts of a request, enforcing the TLS protocol version is a direct feature of the ALB listener configuration. <br><b>D:</b> AWS Shield Advanced is a DDoS protection service; it does not manage TLS policies."
+            }
+        ];
+
+        const quizContent = document.getElementById('quiz-content');
+        const currentScoreEl = document.getElementById('current-score');
+        const totalQuestionsEl = document.getElementById('total-questions');
+        const restartBtn = document.getElementById('restart-btn');
+        
+        let questions = [];
+
+        function buildQuiz() {
+            quizContent.innerHTML = '';
+            totalQuestionsEl.textContent = quizData.length;
+            updateGlobalScore();
+
+            questions = [...quizData].sort(() => Math.random() - 0.5);
+
+            questions.forEach((currentQuestion, questionNumber) => {
+                const options = [];
+                for (let letter in currentQuestion.options) {
+                    options.push(
+                        `<div class="quiz-option">
+                            <label class="block w-full p-4 border-2 border-gray-300 rounded-lg cursor-pointer">
+                                <input type="radio" name="question${questionNumber}" value="${letter}" class="mr-3 align-middle">
+                                <span class="font-bold mr-1">${letter}.</span>
+                                <span class="align-middle">${currentQuestion.options[letter]}</span>
+                            </label>
+                        </div>`
+                    );
+                }
+
+                const questionEl = document.createElement('div');
+                questionEl.classList.add('bg-white', 'p-6', 'rounded-xl', 'shadow-sm', 'question-card');
+                questionEl.dataset.questionIndex = questionNumber;
+
+                questionEl.innerHTML = `
+                    <div class="font-semibold text-lg mb-4">
+                        <span class="font-bold text-blue-600">Question ${questionNumber + 1}:</span>
+                        ${currentQuestion.question}
+                    </div>
+                    <div class="space-y-3 option-group">${options.join('')}</div>
+                    <div class="explanation-box bg-gray-50 rounded-lg">
+                         <div class="p-6">
+                             <div class="explanation-correct"></div>
+                             <div class="explanation-wrong mt-4"></div>
+                         </div>
+                    </div>
+                `;
+                
+                quizContent.appendChild(questionEl);
+            });
+            
+            document.querySelectorAll('.option-group input[type="radio"]').forEach(input => {
+                input.addEventListener('change', handleAnswerSelection);
+            });
+        }
+        
+        function handleAnswerSelection(event) {
+            const selectedInput = event.target;
+            const questionCard = selectedInput.closest('.question-card');
+            const optionGroup = selectedInput.closest('.option-group');
+            
+            const questionIndex = parseInt(questionCard.dataset.questionIndex);
+            const currentQuestion = questions[questionIndex];
+            const userAnswer = selectedInput.value;
+            
+            // Clear previous feedback from all labels in this group
+            optionGroup.querySelectorAll('label').forEach(label => {
+                label.classList.remove('correct-answer', 'incorrect-answer');
+            });
+
+            const selectedLabel = selectedInput.parentElement;
+            const correctLabel = optionGroup.querySelector(`input[value="${currentQuestion.answer}"]`).parentElement;
+
+            // Apply new feedback
+            if (userAnswer === currentQuestion.answer) {
+                selectedLabel.classList.add('correct-answer');
+            } else {
+                selectedLabel.classList.add('incorrect-answer');
+                correctLabel.classList.add('correct-answer');
+            }
+            
+            // Manage explanations
+            const explanationBox = questionCard.querySelector('.explanation-box');
+            const correctExplanationDiv = explanationBox.querySelector('.explanation-correct');
+            const wrongExplanationDiv = explanationBox.querySelector('.explanation-wrong');
+            
+            correctExplanationDiv.innerHTML = `<h4 class="font-bold mb-2 text-gray-800">Explanation:</h4><p class="text-gray-700">${currentQuestion.explanation}</p>`;
+            
+            if (userAnswer !== currentQuestion.answer) {
+                 wrongExplanationDiv.innerHTML = `<h4 class="font-bold mb-2 text-red-700">Why the other options are wrong:</h4><p class="text-gray-700">${currentQuestion.wrongExplanation}</p>`;
+            } else {
+                wrongExplanationDiv.innerHTML = '';
+            }
+
+            explanationBox.classList.add('visible');
+            updateGlobalScore();
+        }
+
+        function updateGlobalScore() {
+            let score = 0;
+            document.querySelectorAll('.question-card').forEach((card, index) => {
+                const selectedInput = card.querySelector('input[type="radio"]:checked');
+                if (selectedInput) {
+                    const questionData = questions[index];
+                    if (selectedInput.value === questionData.answer) {
+                        score++;
+                    }
+                }
+            });
+            currentScoreEl.textContent = score;
+        }
+
+        restartBtn.addEventListener('click', () => {
+             // Scroll to top for a better reset experience
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            // A brief delay to allow scroll to start before rebuilding
+            setTimeout(buildQuiz, 100);
+        });
+        
+        buildQuiz();
+    </script>
+</body>
+</html>
