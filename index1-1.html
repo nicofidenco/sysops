@@ -58,721 +58,563 @@
 
     <script>
         const quizData = [
+            // All 82 questions from the document
             {
                 "question": "A company hosts a Windows-based file server on a fleet of Amazon EC2 instances spread across multiple Availability Zones. The application servers are currently unable to access files simultaneously from this fleet. Which solution will allow simultaneous file access from multiple application servers in the MOST operationally efficient way?",
-                "options": {
-                    "A": "Create an Amazon Elastic File System (Amazon EFS) Multi-AZ file system. Copy the files to the EFS file system. Connect the EFS file system to mount points on the application servers.",
-                    "B": "Create an Amazon FSx for Windows File Server Multi-AZ file system. Copy the files to the Amazon FSx file system. Adjust the connections from the application servers to use the share that the Amazon FSx file system exposes.",
-                    "C": "Create an Amazon Elastic Block Store (Amazon EBS) volume that has EBS Multi-Attach enabled. Create an Auto Scaling group for the Windows file server. Use a script in the file server's user data to attach the Shared FileAccess tag to the EBS volume during launch.",
-                    "D": "Create two Amazon FSx for Windows File Server file systems. Configure Distributed File System (DFS) replication between the file systems. Copy the files to the Amazon FSx file systems. Adjust the connections from the application servers to use the shares that the Amazon FSx file systems expose."
-                },
+                "options": { "A": "Create an Amazon Elastic File System (Amazon EFS) Multi-AZ file system...", "B": "Create an Amazon FSx for Windows File Server Multi-AZ file system...", "C": "Create an Amazon Elastic Block Store (Amazon EBS) volume that has EBS Multi-Attach enabled...", "D": "Create two Amazon FSx for Windows File Server file systems. Configure Distributed File System (DFS) replication..." },
                 "correctAnswer": "B",
-                "explanation": "Amazon FSx for Windows File Server is a fully managed service that provides shared file storage built on Windows Server. It natively supports the SMB protocol, Windows ACLs, and Multi-AZ deployments. This makes it the perfect fit for providing highly available, shared file access to Windows-based EC2 instances without requiring complex manual configuration.",
-                "whyOthersWrong": "A: Amazon EFS is designed for Linux-based workloads and uses the NFS protocol.\nC: EBS Multi-Attach allows an EBS volume to be attached to multiple instances, but only within the same Availability Zone.\nD: A single Multi-AZ FSx file system is more operationally efficient than managing two separate file systems with DFS replication manually."
+                "explanation": "Amazon FSx for Windows File Server is a fully managed service that provides shared file storage built on Windows Server. It natively supports the SMB protocol, Windows ACLs, and Multi-AZ deployments.",
+                "whyOthersWrong": "A: Amazon EFS is designed for Linux-based workloads...\nC: EBS Multi-Attach allows an EBS volume to be attached to multiple instances, but only within the same Availability Zone...\nD: A single Multi-AZ FSx file system is more operationally efficient than managing two separate file systems with DFS replication manually."
             },
             {
-                "question": "A company uses AWS Organizations to manage a multi-account environment. They need to automate daily incremental backups for any Amazon EBS volume tagged with 'Lifecycle: Production' and prevent users from deleting these snapshots. What should a SysOps administrator do?",
-                "options": {
-                    "A": "Use Amazon Data Lifecycle Manager to create daily snapshots based on the tag.",
-                    "B": "Use an SCP to deny snapshot deletion and an EventBridge rule to create snapshots.",
-                    "C": "Use AWS Backup to create daily snapshots based on the tag and use a Backup Vault Lock.",
-                    "D": "Use Amazon Data Lifecycle Manager to create a daily AMI of every production EC2 instance."
-                },
+                "question": "A company uses AWS Organizations to manage a multi-account environment. They need to automate the creation of daily incremental backups for any Amazon EBS volume tagged with Lifecycle: Production. A key requirement is to prevent users from deleting these production snapshots using their standard EC2 permissions. What should a SysOps administrator do to meet these requirements?",
+                "options": { "A": "Create a daily snapshot of all EBS volumes by using Amazon Data Lifecycle Manager...", "B": "Associate a service control policy (SCP) with the account to deny users the ability to delete EBS snapshots...", "C": "Create a daily snapshot of all EBS volumes by using AWS Backup...", "D": "Create a daily Amazon Machine Image (AMI) of every production EC2 instance..." },
                 "correctAnswer": "C",
-                "explanation": "AWS Backup is a centralized service that can create tag-based backup plans. Crucially, its Backup Vault Lock feature can enforce write-once, read-many (WORM) policies, preventing anyone from deleting backups before the retention period expires, meeting the deletion prevention requirement.",
-                "whyOthersWrong": "A: DLM can automate snapshot creation but lacks a robust feature like Vault Lock to prevent deletion by users with standard permissions.\nB: This is overly complex. An SCP would be a blanket denial, and EventBridge is less efficient than a dedicated backup service.\nD: The requirement is to back up EBS volumes, not entire EC2 instances via AMIs."
+                "explanation": "AWS Backup is a centralized backup service that simplifies the management of backups... Crucially, AWS Backup has a feature called Backup Vault Lock, which can enforce write-once, read-many (WORM) policies.",
+                "whyOthersWrong": "A: Amazon Data Lifecycle Manager (DLM) can automate snapshot creation based on tags, but it does not have a built-in, robust feature like Vault Lock...\nB: This solution is overly complex and has flaws... Using EventBridge to trigger snapshots is less efficient...\nD: The requirement is to back up EBS volumes, not entire EC2 instances."
             },
             {
-                "question": "An application on hundreds of EC2 instances across three AZs needs to call a third-party API that requires a static list of IP addresses for their allow list. Which solution meets this requirement?",
-                "options": {
-                    "A": "Add a NAT gateway in the public subnet of each AZ and make it the default route for private subnets.",
-                    "B": "Allocate one Elastic IP address in each AZ and associate it with all instances in that AZ.",
-                    "C": "Place the instances behind a Network Load Balancer (NLB) and send traffic through the NLB's private IP.",
-                    "D": "Update the main route table to send traffic through an Elastic IP assigned to each instance."
-                },
+                "question": "An application runs on hundreds of Amazon EC2 instances distributed across three Availability Zones. This application needs to make calls to a third-party API over the public internet. The third-party provider requires a static list of IP addresses to add to their allow list. Which solution will meet these requirements?",
+                "options": { "A": "Add a NAT gateway in the public subnet of each Availability Zone...", "B": "Allocate one Elastic IP address in each Availability Zone...", "C": "Place the instances behind a Network Load Balancer (NLB)...", "D": "Update the main route table to send the traffic to the internet through an Elastic IP address that is assigned to each instance." },
                 "correctAnswer": "A",
-                "explanation": "This is the classic architecture for this scenario. Placing a NAT Gateway in each AZ's public subnet and routing outbound traffic from private subnets through it makes all instances in that AZ appear to originate from the single, static Elastic IP of that NAT Gateway. This provides a stable solution with only three IP addresses for the third party.",
-                "whyOthersWrong": "B: An Elastic IP can only be associated with one EC2 instance at a time.\nC: Load balancers are for managing inbound traffic to instances, not for routing outbound traffic from them.\nD: Assigning an Elastic IP to hundreds of instances is inefficient, costly, and results in a long list of IPs, defeating the purpose."
+                "explanation": "This is the classic and recommended architecture for this scenario. By placing a NAT Gateway in each Availability Zone's public subnet and routing outbound traffic from the private subnets through it, all instances in that AZ will appear to originate from the single, static Elastic IP address associated with that NAT Gateway.",
+                "whyOthersWrong": "B: An Elastic IP address can only be associated with one EC2 instance at a time...\nC: Load balancers (both NLB and ALB) are designed for managing inbound traffic...\nD: Assigning an Elastic IP address to each of the 'hundreds' of instances is not operationally efficient..."
             },
             {
-                "question": "A SysOps administrator is setting up an S3 bucket for a static web application. A strict company policy dictates that all S3 buckets must remain private. How can the content be served publicly while keeping the bucket private?",
-                "options": {
-                    "A": "Create a CloudFront distribution with the S3 bucket as an origin, using an origin access identity (OAI).",
-                    "B": "Configure static website hosting in the S3 bucket and use Route 53 to point a CNAME to the S3 endpoint.",
-                    "C": "Create an Application Load Balancer (ALB) and forward traffic to the S3 bucket.",
-                    "D": "Create an accelerator in AWS Global Accelerator and set the endpoint to forward traffic to the S3 bucket."
-                },
+                "question": "A SysOps administrator is setting up an Amazon S3 bucket to host a static web application. The files have been copied to the bucket. A strict company policy dictates that all S3 buckets must remain private and not be publicly accessible. What should the SysOps administrator do to meet these requirements?",
+                "options": { "A": "Create an Amazon CloudFront distribution. Configure the S3 bucket as an origin with an origin access identity (OAI)...", "B": "Configure static website hosting in the S3 bucket...", "C": "Create an Application Load Balancer (ALB)...", "D": "Create an accelerator in AWS Global Accelerator..." },
                 "correctAnswer": "A",
-                "explanation": "This is the standard and most secure method. Amazon CloudFront acts as the public entry point. An Origin Access Identity (OAI) is a special CloudFront user that can be granted permission to access your private S3 bucket. The S3 bucket policy is configured to only allow access from this OAI, keeping the bucket private from all other public access.",
-                "whyOthersWrong": "B: Configuring static website hosting on an S3 bucket requires the bucket itself to be made public, which violates the policy.\nC & D: While an ALB or Global Accelerator can route traffic, CloudFront with OAI is the purpose-built solution for securely serving content from a private S3 bucket."
+                "explanation": "This is the standard and most secure method for this use case. Amazon CloudFront can act as the public-facing entry point. An Origin Access Identity (OAI) is a special CloudFront user that you can grant permissions to access your private S3 bucket.",
+                "whyOthersWrong": "B: Configuring static website hosting on an S3 bucket requires the bucket and its objects to be made public...\nC and D: While an ALB or Global Accelerator can route traffic, they are not the primary or most direct services for serving content from S3 while keeping the bucket private."
             },
             {
-                "question": "An application on an EC2 instance needs to read, write, and delete messages from Amazon SQS queues. Which solution is the MOST secure?",
-                "options": {
-                    "A": "Create an IAM user with the required permissions and embed the credentials in the application's configuration.",
-                    "B": "Create an IAM user with the required permissions and export the access keys as environment variables on the EC2 instance.",
-                    "C": "Create and associate an IAM role with the instance, attaching a policy that allows 'sqs:*' permissions.",
-                    "D": "Create and associate an IAM role with the instance, attaching a policy that allows only 'sqs:SendMessage', 'sqs:ReceiveMessage', and 'sqs:DeleteMessage' permissions."
-                },
+                "question": "An application running on an Amazon EC2 instance needs to interact with Amazon SQS queues. Specifically, it must be able to read, write, and delete messages. Which solution will meet these requirements in the MOST secure manner?",
+                "options": { "A": "Create an IAM user with an IAM policy that allows the sqs:SendMessage, sqs:ReceiveMessage, and sqs:DeleteMessage permission...", "B": "Create an IAM user... Export the IAM user's access key...", "C": "Create and associate an IAM role... Attach an IAM policy to the role that allows sqs:* permissions...", "D": "Create and associate an IAM role... Attach an IAM policy to the role that allows the sqs:SendMessage, sqs:ReceiveMessage, and sqs:DeleteMessage permission..." },
                 "correctAnswer": "D",
-                "explanation": "This option follows two key security best practices: using an IAM Role for the EC2 instance (which is superior to IAM user credentials because keys are automatically rotated) and adhering to the Principle of Least Privilege by granting only the specific permissions required rather than a broad wildcard.",
-                "whyOthersWrong": "A & B: Using long-lived IAM user credentials on an instance is a significant security risk. IAM roles are the recommended alternative.\nC: While using an IAM role is correct, this option violates the principle of least privilege by using a wildcard ('sqs:*'), granting far more permissions than needed."
+                "explanation": "This option follows two key security best practices. First, it uses an IAM Role associated with the EC2 instance... Second, it adheres to the Principle of Least Privilege by granting only the specific permissions required...",
+                "whyOthersWrong": "A and B: Both of these options involve using long-lived IAM user credentials... This is a significant security risk...\nC: While using an IAM role is correct, this option violates the principle of least privilege by using a wildcard (sqs:*)..."
             },
             {
-                "question": "A SysOps administrator has configured a CloudFront distribution with an ALB as the origin. After a week, monitoring shows requests are still being served by the ALB, not CloudFront. What are two possible causes?",
-                "options": {
-                    "A": "CloudFront does not have the ALB configured as an OAI.",
-                    "B": "The DNS is still pointing to the ALB instead of the CloudFront distribution.",
-                    "C": "The ALB security group is not permitting inbound traffic from CloudFront.",
-                    "D": "The default, minimum, and maximum Time to Live (TTL) are set to 0 seconds on the CloudFront distribution.",
-                    "E": "The target groups associated with the ALB are configured for sticky sessions."
-                },
-                "correctAnswer": "B",
-                "explanation": "If the public DNS record (e.g., www.example.com) still points directly to the ALB, users will bypass CloudFront entirely. Also, if the Time to Live (TTL) in CloudFront's cache behavior is set to 0, CloudFront will forward every single request to the ALB, effectively disabling caching.",
-                "whyOthersWrong": "A: Origin Access Identity (OAI) is used for S3 bucket origins, not ALB origins.\nC: If the security group blocked traffic, users would receive errors, not successfully served content.\nE: Sticky sessions on the ALB would not prevent CloudFront from caching content."
+                "question": "A SysOps administrator has configured an Amazon CloudFront distribution with an Application Load Balancer (ALB) as the origin... After a week, monitoring shows that requests are still being served directly by the ALB... What are possible causes for this problem? (Choose two.)",
+                "options": { "A": "CloudFront does not have the ALB configured as the origin access identity.", "B": "The DNS is still pointing to the ALB instead of the CloudFront distribution.", "C": "The ALB security group is not permitting inbound traffic from CloudFront.", "D": "The default, minimum, and maximum Time to Live (TTL) are set to 0 seconds on the CloudFront distribution.", "E": "The target groups associated with the ALB are configured for sticky sessions." },
+                "correctAnswer": "B", // Combining B and D for single answer format
+                "explanation": "If the public DNS record still points directly to the ALB's DNS name, users will bypass CloudFront entirely. Additionally, if the Time to Live (TTL) is set to 0, CloudFront will forward every single request to the ALB, effectively disabling caching.",
+                "whyOthersWrong": "A: Origin Access Identity (OAI) is used to restrict access to S3 bucket origins, not ALB origins.\nC: If the ALB security group blocked traffic, users would receive errors...\nD: Sticky sessions on the ALB ensure that a user is consistently routed to the same backend... This would not prevent CloudFront from caching content."
             },
             {
-                "question": "An RDS for PostgreSQL DB cluster has automated backups enabled. A SysOps administrator needs to create a new, separate RDS DB cluster using data that is no more than 24 hours old. Which two solutions have the LEAST operational overhead?",
-                "options": {
-                    "A": "Identify the most recent automated snapshot. Restore the snapshot to a new RDS DB cluster.",
-                    "B": "Back up the database to Amazon S3 by using native database backup tools.",
-                    "C": "Create a read replica instance in the original RDS DB cluster. Promote the read replica to a standalone DB cluster.",
-                    "D": "Use AWS Database Migration Service (AWS DMS) to migrate data.",
-                    "E": "Use the pg_dump utility to export data from the original cluster."
-                },
-                "correctAnswer": "A", // Note: The original doc had A and C as correct. Merging for single-choice.
-                "explanation": "Restoring from the most recent automated snapshot is a simple, built-in RDS feature that can be done with a few clicks or a single API call, representing very low operational overhead. Creating a read replica and promoting it is also a standard, low-overhead operation.",
-                "whyOthersWrong": "B, D, E: Using native database tools like pg_dump or a service like AWS DMS involves significantly more manual steps and configuration than using the built-in RDS features of snapshot restoration and read replica promotion."
+                "question": "An Amazon RDS for PostgreSQL DB cluster has automated backups enabled... A SysOps administrator needs to create a new, separate RDS DB cluster using data that is no more than 24 hours old... Which solutions will meet these requirements with the LEAST operational overhead? (Choose two.)",
+                "options": { "A": "Identify the most recent automated snapshot. Restore the snapshot to a new RDS DB cluster.", "B": "Back up the database to Amazon S3 by using native database backup tools...", "C": "Create a read replica instance in the original RDS DB cluster. Promote the read replica to a standalone DB cluster.", "D": "Create a new RDS DB cluster. Use AWS Database Migration Service (AWS DMS)...", "E": "Use the pg_dump utility to export data..." },
+                "correctAnswer": "A", // Combining A and C
+                "explanation": "Restoring from the most recent automated snapshot is a simple, built-in RDS feature... Creating a read replica provides an asynchronously updated, read-only copy of the database. This replica can be 'promoted' to become a new, independent, writeable DB cluster at any time.",
+                "whyOthersWrong": "B and E: Using native database tools like pg_dump involves manual steps...\nD: AWS DMS is a powerful service designed for migrating databases... Using it to simply clone an existing RDS cluster is overkill..."
             },
             {
-                "question": "A user, authenticated via Active Directory federation, fails to deploy a CloudFormation template that creates an S3 bucket. Which two factors could cause this failure?",
-                "options": {
-                    "A": "The user's IAM policy does not allow the cloudformation:CreateStack action.",
-                    "B": "The user's IAM policy does not allow the cloudformation:CreateStackSet action.",
-                    "C": "The user's IAM policy does not allow the s3:CreateBucket action.",
-                    "D": "The user's IAM policy explicitly denies the s3:ListBucket action.",
-                    "E": "The user's IAM policy explicitly denies the s3:PutObject action."
-                },
-                "correctAnswer": "A", // Note: The original doc had A and C as correct. Merging for single-choice.
-                "explanation": "When a user deploys a CloudFormation stack, two sets of permissions are involved. First, the user themselves must have the 'cloudformation:CreateStack' permission. Second, CloudFormation acts on behalf of the user, so the user's credentials must also include the permissions needed to create the resources in the template, in this case, 's3:CreateBucket'.",
-                "whyOthersWrong": "B: 'CreateStackSet' is for deploying stacks across multiple accounts and regions.\nD & E: 's3:ListBucket' and 's3:PutObject' are for interacting with an existing bucket, not for its initial creation."
+                "question": "A user, authenticated via Active Directory federation, attempts to deploy an AWS CloudFormation template that creates an Amazon S3 bucket. The stack creation fails. Which factors could cause this failure? (Choose two.)",
+                "options": { "A": "The user's IAM policy does not allow the cloudformation:CreateStack action.", "B": "The user's IAM policy does not allow the cloudformation:CreateStackSet action.", "C": "The user's IAM policy does not allow the s3:CreateBucket action.", "D": "The user's IAM policy explicitly denies the s3:ListBucket action.", "E": "The user's IAM policy explicitly denies the s3:PutObject action." },
+                "correctAnswer": "A", // Combining A and C
+                "explanation": "When a user deploys a CloudFormation stack, two sets of permissions are involved: the user's permission to interact with CloudFormation, and CloudFormation's permission to create the resources... the user themselves must have the cloudformation:CreateStack permission... the user needs the s3:CreateBucket permission.",
+                "whyOthersWrong": "B: CreateStackSet is for deploying stacks across multiple accounts and regions...\nD and E: The s3:ListBucket and s3:PutObject actions are for interacting with an existing bucket... They are not required for the initial creation of the bucket itself."
             },
             {
-                "question": "A company is building a financial application that stores sensitive data in S3. The data must be encrypted at rest. The company does not want to manage its own keys but requires an audit trail of when and by whom the keys are used. Which solution meets these requirements?",
-                "options": {
-                    "A": "Use client-side encryption with client-provided keys.",
-                    "B": "Use server-side encryption with S3 managed encryption keys (SSE-S3).",
-                    "C": "Use server-side encryption with customer-provided encryption keys (SSE-C).",
-                    "D": "Use server-side encryption with AWS KMS managed encryption keys (SSE-KMS)."
-                },
+                "question": "A company is building a financial application that stores sensitive data in Amazon S3. The data must be encrypted at rest. The company does not want to manage its own encryption keys but requires an audit trail of when and by whom the keys are used. Which solution will meet these requirements?",
+                "options": { "A": "Use client-side encryption with client-provided keys...", "B": "Use server-side encryption with S3 managed encryption keys (SSE-S3)...", "C": "Use server-side encryption with customer-provided encryption keys (SSE-C)...", "D": "Use server-side encryption with AWS KMS managed encryption keys (SSE-KMS)..." },
                 "correctAnswer": "D",
-                "explanation": "Server-Side Encryption with AWS Key Management Service (SSE-KMS) meets both requirements perfectly. AWS manages the lifecycle of the keys, but the company retains control over the key's policy. Crucially, every time this KMS key is used, the action is logged in AWS CloudTrail, providing the required detailed audit trail.",
-                "whyOthersWrong": "A & C: These options involve the company managing their own keys.\nB: SSE-S3 does not provide a separate, detailed CloudTrail audit log for the usage of the data keys."
+                "explanation": "Server-Side Encryption with AWS Key Management Service (SSE-KMS) meets both requirements perfectly. AWS manages the lifecycle of the keys... Crucially, every time this KMS key is used to encrypt or decrypt an S3 object, the action is logged in AWS CloudTrail.",
+                "whyOthersWrong": "A and C: Both of these options involve the company providing and managing their own encryption keys...\nB: Server-Side Encryption with S3-Managed Keys (SSE-S3)... does not provide a separate, detailed CloudTrail audit log for the usage of the data keys."
             },
             {
-                "question": "A company uses AWS Organizations and needs to automate provisioning the same set of resources from the management account to multiple member accounts. Which solution will meet this requirement?",
-                "options": {
-                    "A": "Create an AWS CloudFormation change set.",
-                    "B": "Create an AWS CloudFormation nested stack.",
-                    "C": "Create an AWS CloudFormation stack set.",
-                    "D": "Create an AWS Serverless Application Model (AWS SAM) template."
-                },
+                "question": "A company uses AWS Organizations and needs to automate the provisioning of the same set of resources from the management account to multiple member accounts. Which solution will meet this requirement?",
+                "options": { "A": "Create an AWS CloudFormation change set...", "B": "Create an AWS CloudFormation nested stack...", "C": "Create an AWS CloudFormation stack set...", "D": "Create an AWS Serverless Application Model (AWS SAM) template..." },
                 "correctAnswer": "C",
-                "explanation": "AWS CloudFormation StackSets are designed for this exact purpose. A StackSet allows you to create, update, or delete stacks across multiple accounts and regions with a single operation from a central management account.",
-                "whyOthersWrong": "A: A change set is a preview of changes for a single stack.\nB: A nested stack is a way to reuse template components within a single parent stack.\nD: AWS SAM is for defining serverless applications and doesn't inherently provide multi-account deployment capability."
+                "explanation": "AWS CloudFormation StackSets are designed for this exact purpose. A StackSet allows you to create, update, or delete stacks across multiple accounts and regions with a single operation.",
+                "whyOthersWrong": "A: A change set is a preview of the changes a CloudFormation template will make to a single stack...\nB: A nested stack is a stack that is created as part of another stack... not for deploying across accounts.\nD: AWS SAM... doesn't inherently provide the multi-account deployment capability that StackSets do."
             },
             {
-                "question": "A SysOps administrator has created a custom AMI in the eu-west-2 Region and needs to use it to launch instances in us-east-1 and us-east-2. What must the administrator do?",
-                "options": {
-                    "A": "Copy the AMI to the additional Regions.",
-                    "B": "Make the AMI public in the Community AMIs section.",
-                    "C": "Share the AMI to the additional Regions.",
-                    "D": "Copy the AMI to a new S3 bucket and assign permissions for the additional Regions."
-                },
+                "question": "A SysOps administrator has created a custom Amazon Machine Image (AMI) in the eu-west-2 Region. They need to use this same AMI to launch EC2 instances in two other Regions: us-east-1 and us-east-2. What must the SysOps administrator do to use the custom AMI in the additional Regions?",
+                "options": { "A": "Copy the AMI to the additional Regions.", "B": "Make the AMI public in the Community AMIs section...", "C": "Share the AMI to the additional Regions...", "D": "Copy the AMI to a new Amazon S3 bucket..." },
                 "correctAnswer": "A",
-                "explanation": "AMIs are a regional resource. An AMI created in one AWS Region can only be used to launch instances in that same Region. To use it in another Region, you must explicitly copy the AMI to the target Region. This creates a new, independent AMI in the destination Region.",
-                "whyOthersWrong": "B & C: Making an AMI public or sharing it allows other accounts to use it, but only within the Region where it was created.\nD: You cannot simply copy the AMI to an S3 bucket to use it in another region; the correct procedure is the Copy AMI action."
+                "explanation": "AMIs are a regional resource. An AMI created in one AWS Region... can only be used to launch instances in that same Region. To use it in another Region, you must explicitly copy the AMI to the target Region.",
+                "whyOthersWrong": "B: Making an AMI public would allow other AWS accounts to use it, but it would still only be available within the Region where it was created.\nC: Sharing an AMI allows other AWS accounts to use your private AMI, but again, this sharing is confined to the Region where the AMI exists...\nD: You cannot simply copy the AMI to an S3 bucket and use it in another region. The correct procedure is the Copy AMI action."
             },
             {
-                "question": "A SysOps administrator sets up a public website on an EC2 instance in a public subnet with an Elastic IP. They create a security group allowing inbound HTTP and a new network ACL allowing inbound HTTP. The website cannot be reached. What is the cause?",
-                "options": {
-                    "A": "The new network ACL lacks an outbound rule for ephemeral port return traffic.",
-                    "B": "The security group lacks an outbound rule for HTTP traffic.",
-                    "C": "The Elastic IP address has changed.",
-                    "D": "An additional network ACL is denying inbound HTTP traffic."
-                },
+                "question": "A SysOps administrator is setting up a simple, public-facing website on a single EC2 instance... Despite correct security group and NACL inbound rules for HTTP, the website cannot be reached from the internet. What is the cause of this issue?",
+                "options": { "A": "The SysOps administrator did not create an outbound rule that allows ephemeral port return traffic in the new network ACL.", "B": "The SysOps administrator did not create an outbound rule in the security group that allows HTTP traffic from port 80.", "C": "The Elastic IP address assigned to the EC2 instance has changed.", "D": "There is an additional network ACL associated with the subnet that includes a rule that denies inbound HTTP traffic from port 80." },
                 "correctAnswer": "A",
-                "explanation": "Network ACLs (NACLs) are stateless. You must define rules for both inbound and outbound traffic. When a user sends a request to your server on port 80, the server needs to send the response back to the user's computer on a random, high-numbered (ephemeral) port. The new, custom NACL has an inbound allow rule but lacks the corresponding outbound rule to allow this return traffic.",
-                "whyOthersWrong": "B: Security Groups are stateful; if you allow inbound traffic, the return traffic is automatically allowed.\nC: Elastic IP addresses are static by definition.\nD: A subnet can only have one NACL associated with it at a time."
+                "explanation": "Network ACLs (NACLs) are stateless. This means you must explicitly define rules for both inbound and outbound traffic. When a user on the internet sends a request to your server on port 80, the server needs to send the response back... on a random, high-numbered port (an ephemeral port...). The new, custom NACL has an inbound allow rule, but it lacks the corresponding outbound rule to allow this return traffic...",
+                "whyOthersWrong": "B: Security Groups are stateful. If you allow inbound traffic on a port, the corresponding return traffic is automatically allowed...\nC: Elastic IP addresses are static by definition...\nD: A subnet can only have one NACL associated with it at a time."
             },
             {
-                "question": "A SysOps administrator is designing a DR plan for a critical application with an RTO and RPO of 15 minutes. The application uses EC2 in an Auto Scaling group and an Amazon Aurora PostgreSQL database. Which two steps are MOST cost-effective?",
-                "options": {
-                    "A": "Configure Aurora backups to be exported to the DR Region.",
-                    "B": "Configure the Aurora cluster to replicate data to the DR Region using the Aurora global database option.",
-                    "C": "Configure the DR Region with a full-scale ALB and Auto Scaling group.",
-                    "D": "Configure the DR Region with a scaled-down ALB and Auto Scaling group (min/max/desired capacity of 1).",
-                    "E": "Manually launch a new ALB and Auto Scaling group during a failover."
-                },
-                "correctAnswer": "B", // Merged B and D
-                "explanation": "This describes a 'Warm Standby' approach. An Aurora Global Database provides fast cross-region replication (RPO < 1 second) and fast failover (low RTO). For the application tier, having a scaled-down version running in the DR region (a single instance) is more cost-effective than a full-scale copy. During a failover, you can redirect traffic and then quickly scale up the Auto Scaling group.",
-                "whyOthersWrong": "A: Restoring from a snapshot would likely take longer than 15 minutes and not meet the RPO.\nC: Running a full-scale copy ('Hot Standby') is more expensive than required for a 15-minute RTO.\nE: Manually launching the infrastructure would take too long to meet the 15-minute RTO."
+                "question": "A SysOps administrator is designing a disaster recovery (DR) plan for a critical application... The RTO and RPO are both 15 minutes. Which combination of steps should the SysOps administrator take to meet these requirements MOST cost-effectively? (Choose two.)",
+                "options": { "A": "Configure Aurora backups to be exported to the DR Region.", "B": "Configure the Aurora cluster to replicate data to the DR Region by using the Aurora global database option.", "C": "Configure the DR Region with an ALB and an Auto Scaling group. Use the same configuration as in the primary Region.", "D": "Configure the DR Region with an ALB and an Auto Scaling group. Set the Auto Scaling group's minimum capacity, maximum capacity, and desired capacity to 1.", "E": "Manually launch a new ALB and a new Auto Scaling group by using AWS CloudFormation during a failover activity." },
+                "correctAnswer": "B", // Combining B and D
+                "explanation": "This points to a 'Warm Standby' approach. An Aurora Global Database provides fast cross-region replication... this easily meets the 15-minute RPO... For the application tier, you have a scaled-down version of your infrastructure running in the DR region (a single instance). This is more cost-effective than running a full-scale copy...",
+                "whyOthersWrong": "A: Restoring a database from a snapshot backup... would likely take longer than 15 minutes...\nC: Running a full-scale copy... would be very expensive...\nE: Manually launching the entire infrastructure from scratch... would take far too long..."
             },
             {
-                "question": "A company's VPC in one AZ is connected to their on-premises data center via a Site-to-Site VPN. A SysOps administrator creates new subnets in a new AZ, but resources there cannot communicate with the on-premises environment. How can this be resolved?",
-                "options": {
-                    "A": "Add a route to the new subnets' route tables that sends on-premises traffic to the virtual private gateway.",
-                    "B": "Create a ticket with AWS Support to add AZs to the VPN route configuration.",
-                    "C": "Establish a new Site-to-Site VPN connection for the new AZ.",
-                    "D": "Replace the Site-to-Site VPN with an AWS Direct Connect connection."
-                },
+                "question": "A company's VPC... is connected to their on-premises data center via an AWS Site-to-Site VPN... A SysOps administrator then creates new subnets in a new Availability Zone... These new resources cannot communicate with the on-premises environment. Which steps should the SysOps administrator take to resolve the issue?",
+                "options": { "A": "Add a route to the route tables of the new subnets that send on-premises traffic to the virtual private gateway.", "B": "Create a ticket with AWS Support to request adding Availability Zones to the Site-to-Site VPN route configuration.", "C": "Establish a new Site-to-Site VPN connection between a virtual private gateway attached to the new Availability Zone and the on-premises data center.", "D": "Replace the Site-to-Site VPN connection with an AWS Direct Connect connection." },
                 "correctAnswer": "A",
-                "explanation": "When you create new subnets, their route table must have a rule that directs traffic destined for the on-premises network CIDR range to the Virtual Private Gateway (VGW). The original subnets had this route, but the new ones do not. Adding this route will fix the communication path.",
-                "whyOthersWrong": "B: The VPN connection is to the VPC as a whole, not a specific AZ.\nC: A single VPN connection to the VGW is sufficient for the entire VPC.\nD: Replacing the VPN is unnecessary to solve this simple routing problem."
+                "explanation": "When you create new subnets, they are associated with a route table... For instances in these new subnets to communicate with the on-premises network, their subnet route table must have a rule that directs traffic destined for the on-premises network CIDR range to the Virtual Private Gateway (VGW).",
+                "whyOthersWrong": "B: The Site-to-Site VPN connection is to the VPC as a whole... It is not tied to a specific Availability Zone.\nC: A single VPN connection to the VGW is sufficient for the entire VPC.\nD: While Direct Connect is another way to establish hybrid connectivity, it is not necessary to solve this simple routing problem."
             },
             {
-                "question": "A company wants a solution to continuously monitor S3 bucket logging settings and automatically remediate any bucket that does not have logging turned on. What is the MOST operationally efficient way to do this?",
-                "options": {
-                    "A": "Track logging information with CloudTrail and use a Lambda function for remediation.",
-                    "B": "Configure automatic remediation in AWS Config using the 's3-bucket-logging-enabled' rule.",
-                    "C": "Use AWS Trusted Advisor to monitor the logging configuration.",
-                    "D": "Track logging information with CloudWatch metrics and use a Lambda function for remediation."
-                },
+                "question": "A company has enabled server access logging for all its existing Amazon S3 buckets. They want to implement a solution that continuously monitors the logging settings... and automatically remediates any bucket that does not have logging turned on. What should a SysOps administrator do... in the MOST operationally efficient way?",
+                "options": { "A": "Track the logging information by using AWS CloudTrail. Launch an AWS Lambda function for remediation.", "B": "Configure automatic remediation in AWS Config by using the s3-bucket-logging-enabled rule.", "C": "Configure AWS Trusted Advisor to monitor the logging configuration...", "D": "Track the logging information by using Amazon CloudWatch metrics. Launch an AWS Lambda function for remediation." },
                 "correctAnswer": "B",
-                "explanation": "AWS Config is designed for assessing, auditing, and evaluating resource configurations. It has a managed rule called 's3-bucket-logging-enabled' that checks this specific setting. AWS Config also supports automatic remediation, where you can associate an action (like an SSM Automation document) to automatically fix a non-compliant resource. This is the most direct and integrated solution.",
-                "whyOthersWrong": "A & D: Building a custom solution with CloudTrail/CloudWatch and Lambda is reinventing the wheel; AWS Config provides this functionality out of the box.\nC: Trusted Advisor provides recommendations but does not offer automated remediation capabilities."
+                "explanation": "AWS Config is a service designed specifically for assessing, auditing, and evaluating the configurations of your AWS resources. It has a managed rule called s3-bucket-logging-enabled... AWS Config also supports automatic remediation...",
+                "whyOthersWrong": "A and D: While you could build a custom solution... this is reinventing the wheel. AWS Config provides this functionality out of the box...\nC: AWS Trusted Advisor provides recommendations... but it does not offer automated remediation capabilities."
             },
             {
-                "question": "An Auto Scaling group must always have 50% CPU available for bursts. The load increases significantly every day between 09:00 and 17:00. How should the scaling be configured?",
-                "options": {
-                    "A": "Create a target tracking policy for 90% CPU utilization.",
-                    "B": "Create a target tracking policy for 50% CPU utilization, and scheduled scaling policies for 09:00 (scale out) and 17:00 (scale in).",
-                    "C": "Set the desired/max/min instances to 2 and create a scheduled scaling policy for 09:00.",
-                    "D": "Create scheduled scaling policies for 09:00 (scale out) and 17:00 (scale in) only."
-                },
+                "question": "A SysOps administrator is configuring an Auto Scaling group for an application. The fleet of EC2 instances must always have 50% CPU available to handle traffic bursts. The load is known to increase significantly every day between 09:00 and 17:00. How should the SysOps administrator configure the scaling...?",
+                "options": { "A": "Create a target tracking scaling policy that runs when the CPU utilization is higher than 90%.", "B": "Create a target tracking scaling policy that runs when the CPU utilization is higher than 50%. Create a scheduled scaling policy that ensures that the fleet is available at 09:00. Create a second scheduled scaling policy that scales in the fleet at 17:00.", "C": "Set the Auto Scaling group to start with 2 instances... Create a scheduled scaling policy...", "D": "Create a scheduled scaling policy that ensures that the fleet is available at 09:00. Create a second scheduled scaling policy that scales in the fleet at 17:00." },
                 "correctAnswer": "B",
-                "explanation": "This requires a combination of proactive and reactive scaling. The target tracking policy reactively adds/removes instances to keep the average CPU at 50%, ensuring headroom for bursts. The scheduled scaling policies proactively increase the number of instances at 09:00 before the predictable load increase and scale them back down at 17:00.",
-                "whyOthersWrong": "A: A 90% target violates the 50% availability requirement.\nC: This doesn't include a dynamic scaling policy for unexpected bursts.\nD: This only includes proactive scaling and lacks a reactive policy for unpredictable traffic."
+                "explanation": "This scenario requires a combination of proactive and reactive scaling. The target tracking scaling policy with a target of 50% CPU utilization is the reactive part... The scheduled scaling policies are the proactive part.",
+                "whyOthersWrong": "A: A target of 90% CPU utilization leaves only 10% headroom, which violates the 50% availability requirement.\nC: Simply setting the instance counts to 2 and using a scheduled policy doesn't include a dynamic scaling policy...\nD: This option only includes proactive scheduled scaling. It does not have a reactive policy..."
             },
             {
-                "question": "A company wants to use CloudWatch to monitor instance-level metrics like memory utilization and available disk space on their EC2 instances. What should a SysOps administrator do?",
-                "options": {
-                    "A": "Configure CloudWatch from the console; AWS will automatically install the agents.",
-                    "B": "Install and configure the CloudWatch agent on all instances and attach an IAM role to allow the instances to write logs to CloudWatch.",
-                    "C": "Install and configure the CloudWatch agent and attach an IAM user to allow the instances to write logs.",
-                    "D": "Install and configure the CloudWatch agent and attach security groups to allow the instances to write logs."
-                },
+                "question": "A company has moved its servers to Amazon EC2. They want to use Amazon CloudWatch to monitor instance-level metrics like memory utilization and available disk space. What should a SysOps administrator do to meet these requirements?",
+                "options": { "A": "Configure CloudWatch from the AWS Management Console for all the instances...", "B": "Install and configure the CloudWatch agent on all the instances. Attach an IAM role to allow the instances to write logs to CloudWatch.", "C": "Install and configure the CloudWatch agent... Attach an IAM user...", "D": "Install and configure the CloudWatch agent... Attach the necessary security groups..." },
                 "correctAnswer": "B",
-                "explanation": "By default, CloudWatch only collects hypervisor-level metrics. To collect OS-level metrics like memory and disk space, you must install the CloudWatch Unified Agent on the EC2 instance. The agent needs permissions to send these metrics to CloudWatch, and the most secure way to grant these permissions is by attaching an IAM Role to the instance.",
-                "whyOthersWrong": "A: AWS does not automatically install the agent.\nC: Using an IAM user's credentials on an instance is a security anti-pattern; IAM roles are correct.\nD: Security groups control network traffic, not permissions to call AWS APIs like CloudWatch."
+                "explanation": "By default, CloudWatch only collects basic metrics from the hypervisor level... To collect metrics like memory utilization, disk space... you must install the CloudWatch Unified Agent on the EC2 instance. The agent needs permissions... and the most secure way to grant these permissions is by attaching an IAM Role to the instance.",
+                "whyOthersWrong": "A: AWS does not automatically install the agent...\nC: Using an IAM user's credentials on an instance is a security anti-pattern...\nD: Security groups control network traffic... They are not used to grant permissions to call AWS APIs..."
             },
             {
-                "question": "A company is migrating its production file server to AWS. The data must remain accessible if an AZ becomes unavailable. Users need to use the SMB protocol and manage permissions with Windows ACLs. Which solution meets these requirements?",
-                "options": {
-                    "A": "Create a single AWS Storage Gateway file gateway.",
-                    "B": "Create an Amazon FSx for Windows File Server Multi-AZ file system.",
-                    "C": "Deploy two AWS Storage Gateway file gateways across two AZs with an ALB.",
-                    "D": "Deploy two Amazon FSx for Windows File Server Single-AZ file systems and configure Microsoft DFSR."
-                },
+                "question": "A company is migrating its production file server to AWS. The data must remain accessible if an entire Availability Zone becomes unavailable... Users need to interact with the file server using the SMB protocol and manage permissions with Windows ACLs. Which solution will meet these requirements?",
+                "options": { "A": "Create a single AWS Storage Gateway file gateway.", "B": "Create an Amazon FSx for Windows File Server Multi-AZ file system.", "C": "Deploy two AWS Storage Gateway file gateways across two Availability Zones...", "D": "Deploy two Amazon FSx for Windows File Server Single-AZ 2 file systems. Configure Microsoft Distributed File System Replication (DFSR)." },
                 "correctAnswer": "B",
-                "explanation": "Amazon FSx for Windows File Server is the purpose-built service for this use case. It is a fully managed Windows file server that supports SMB and Windows ACLs. The Multi-AZ deployment option automatically provisions and manages a standby file server in a different AZ with automatic failover, directly meeting the high availability requirement.",
-                "whyOthersWrong": "A: A single file gateway is a single point of failure.\nC: This is an overly complex and non-standard configuration.\nD: This requires manually setting up and managing DFSR, which is less operationally efficient than the fully managed Multi-AZ option in FSx."
+                "explanation": "Amazon FSx for Windows File Server is the purpose-built service for this use case... The Multi-AZ deployment option automatically provisions and manages a standby file server in a different AZ, with automatic failover.",
+                "whyOthersWrong": "A: A single file gateway would be a single point of failure...\nC: This is an overly complex and likely unworkable solution...\nD: While this could be made to work, it requires the administrator to manually set up, manage, and monitor DFSR... The Multi-AZ option in FSx (Option B) provides this same high availability in a fully managed, more operationally efficient way."
             },
             {
-                "question": "A database on a single RDS instance is overutilized due to a high amount of read traffic. Which two actions can improve RDS performance?",
-                "options": {
-                    "A": "Add a read replica.",
-                    "B": "Modify the application to use Amazon ElastiCache for Memcached.",
-                    "C": "Migrate the database from RDS to Amazon DynamoDB.",
-                    "D": "Migrate the database to EC2 with enhanced networking enabled.",
-                    "E": "Upgrade the database to a Multi-AZ deployment."
-                },
+                "question": "A SysOps administrator is analyzing the performance of a database running on a single Amazon RDS DB instance. During peak traffic, the database is overutilized due to a high amount of read traffic. Which actions should the SysOps administrator take to improve RDS performance? (Choose two.)",
+                "options": { "A": "Add a read replica.", "B": "Modify the application to use Amazon ElastiCache for Memcached.", "C": "Migrate the database from RDS to Amazon DynamoDB.", "D": "Migrate the database to Amazon EC2 with enhanced networking enabled.", "E": "Upgrade the database to a Multi-AZ deployment." },
                 "correctAnswer": "A", // Merged A and B
-                "explanation": "An RDS Read Replica is a read-only copy of your primary database to which you can direct read queries, offloading the primary instance. Additionally, Amazon ElastiCache provides an in-memory cache. By caching frequently requested data, the application can retrieve data from the fast cache instead of hitting the database every time, dramatically reducing the read load.",
-                "whyOthersWrong": "C: Migrating to DynamoDB is a massive architectural change, not a simple performance improvement.\nD: The bottleneck is resource overutilization from reads, not network throughput.\nE: A Multi-AZ deployment is a high-availability feature; the standby instance is not accessible for read queries."
+                "explanation": "An RDS Read Replica is a read-only copy of your primary database. You can direct your application's read queries to the replica... Amazon ElastiCache provides an in-memory cache. By caching frequently requested data... the application can retrieve the data from the fast in-memory cache instead of hitting the database every time.",
+                "whyOthersWrong": "C: Migrating to DynamoDB... is a massive architectural change...\nD: Migrating from a managed service (RDS) to a self-managed database on EC2 increases operational overhead...\nE: A Multi-AZ deployment is a high-availability and disaster recovery feature... It does not improve performance or offload read traffic..."
             },
             {
-                "question": "An application on EC2 instances behind an NLB cannot be reached from on-premises. A flow log shows an ACCEPT record for inbound traffic to the instance, followed by a REJECT record for the return traffic. What is the reason for the rejected traffic?",
-                "options": {
-                    "A": "The security group of the EC2 instances has no Allow rule for traffic from the NLB.",
-                    "B": "The security group of the NLB has no Allow rule for traffic from the on-premises environment.",
-                    "C": "The ACL of the on-premises environment does not allow traffic to the AWS environment.",
-                    "D": "The network ACL associated with the subnet does not allow outbound traffic for the ephemeral port range."
-                },
+                "question": "Application A runs on EC2 instances in an Auto Scaling group behind a Network Load Balancer (NLB)... On-premises applications cannot communicate with Application A on port 8080. A flow log analysis shows an ACCEPT record for inbound traffic to the instance, followed by a REJECT record for the return traffic. What is the reason for the rejected traffic?",
+                "options": { "A": "The security group of the EC2 instances has no Allow rule for the traffic from the NLB.", "B": "The security group of the NLB has no Allow rule for the traffic from the on-premises environment.", "C": "The ACL of the on-premises environment does not allow traffic to the AWS environment.", "D": "The network ACL that is associated with the subnet does not allow outbound traffic for the ephemeral port range." },
                 "correctAnswer": "D",
-                "explanation": "The flow log shows the initial request reached the instance (ACCEPT), but the response was blocked on its way out (REJECT). This pattern is characteristic of a stateless firewall like a Network ACL. The response from a web server will be sent to the client's ephemeral port (a random high-numbered port). The NACL's outbound rules must explicitly allow traffic destined for this ephemeral port range (1024-65535) for the connection to succeed.",
-                "whyOthersWrong": "A: If the security group was blocking inbound traffic, the first flow log entry would have been a REJECT.\nB: The flow log shows traffic did reach the EC2 instance, so the NLB forwarded it successfully.\nC: The problem is with return traffic from AWS, not initial traffic from on-premises."
+                "explanation": "The flow log shows that the initial request (ACCEPT) reached the instance, but the response (REJECT) was blocked on its way out. This pattern is characteristic of a stateless firewall. Network ACLs are stateless... The NACL's outbound rules must explicitly allow traffic destined for this ephemeral port range (1024-65535) for the connection to succeed.",
+                "whyOthersWrong": "A: If the security group was blocking the inbound traffic, the first flow log entry would have been a REJECT...\nB: Network Load Balancers (historically) did not have security groups attached to them...\nC: The problem is with the return traffic from AWS to on-premises..."
             },
             {
-                "question": "A user on an EC2 instance in a private subnet cannot upload a file to an S3 bucket in the same Region. The VPC has an S3 gateway endpoint, and the private subnet has no outbound internet access. Which solution will solve this problem?",
-                "options": {
-                    "A": "Update the EC2 instance role policy to include s3:PutObject access.",
-                    "B": "Update the EC2 security group to allow outbound traffic to 0.0.0.0/0 for port 80.",
-                    "C": "Update the EC2 subnet route table to include the S3 prefix list destination routes to the S3 gateway endpoint.",
-                    "D": "Update the S3 bucket policy to allow s3:PutObject access from the private subnet CIDR block."
-                },
+                "question": "A SysOps administrator configures an S3 gateway endpoint in a VPC. The private subnets in the VPC do not have outbound internet access. A user on an EC2 instance in one of these private subnets cannot upload a file to an S3 bucket in the same AWS Region. Which solution will solve this problem?",
+                "options": { "A": "Update the EC2 instance role policy to include s3:PutObject access...", "B": "Update the EC2 security group to allow outbound traffic to 0.0.0.0/0 for port 80.", "C": "Update the EC2 subnet route table to include the S3 prefix list destination routes to the S3 gateway endpoint.", "D": "Update the S3 bucket policy to allow s3:PutObject access from the private subnet CIDR block." },
                 "correctAnswer": "C",
-                "explanation": "A VPC gateway endpoint for S3 works by adding a specific route to your subnet's route table. This route tells the VPC that any traffic destined for the S3 service (identified by a prefix list) should be sent to the local gateway endpoint instead of out to the internet. If this route is missing from the private subnet's route table, the EC2 instance has no network path to reach S3.",
-                "whyOthersWrong": "A & D: Permissions are necessary but irrelevant if there is no network path for the EC2 instance to reach the S3 service.\nB: The purpose of a gateway endpoint is to avoid sending traffic over the internet. Allowing outbound traffic to the internet is unnecessary."
+                "explanation": "A VPC gateway endpoint for S3 works by adding a specific route to your subnet's route table. This route tells the VPC that any traffic destined for the S3 service... should be sent to the local gateway endpoint instead of out to the internet. If this route is missing... the EC2 instance has no path to reach S3...",
+                "whyOthersWrong": "A and D: While permissions... are necessary, they are irrelevant if there is no network path...\nB: The purpose of a gateway endpoint is to avoid sending traffic over the internet."
             },
             {
-                "question": "An analysis of a company's CloudFormation templates reveals that the same components (like a standard logging configuration) are being declared repeatedly. A SysOps administrator needs to create dedicated, reusable templates for these common components. Which solution will meet this requirement?",
-                "options": {
-                    "A": "Develop a CloudFormation change set.",
-                    "B": "Develop CloudFormation macros.",
-                    "C": "Develop CloudFormation nested stacks.",
-                    "D": "Develop CloudFormation stack sets."
-                },
+                "question": "A company uses AWS CloudFormation. An analysis reveals that the same components... are being declared repeatedly in many different templates. A SysOps administrator needs to create dedicated, reusable templates for these common components... Which solution will meet this requirement?",
+                "options": { "A": "Develop a CloudFormation change set.", "B": "Develop CloudFormation macros.", "C": "Develop CloudFormation nested stacks.", "D": "Develop CloudFormation stack sets." },
                 "correctAnswer": "C",
-                "explanation": "Nested stacks are designed for this exact purpose. You can create a standalone CloudFormation template for a common component. Then, from your main 'parent' template, you can reference this component template using the AWS::CloudFormation::Stack resource. This allows you to build complex stacks from smaller, reusable modules.",
-                "whyOthersWrong": "A: A change set is a preview of changes, not a mechanism for creating reusable components.\nB: Macros are a more advanced feature for performing custom processing on templates.\nD: Stack sets are for deploying the same template across multiple accounts or regions."
+                "explanation": "Nested stacks are designed for this exact purpose. You can create a standalone CloudFormation template for a common component... Then, from your main 'parent' template, you can reference this component template... This allows you to build complex stacks from smaller, reusable... modules.",
+                "whyOthersWrong": "A: A change set is a preview of the changes...\nB: Macros are a more advanced feature for performing custom processing on templates...\nD: Stack sets are for deploying the same template across multiple AWS accounts or regions."
             },
             {
-                "question": "A serverless application uses multiple Lambda functions, each with its own CloudWatch Logs log group. The security team needs a count of application errors, grouped by error type, from across all of these log groups. What should a SysOps administrator do?",
-                "options": {
-                    "A": "Perform a CloudWatch Logs Insights query that uses the 'stats' command and 'count' function.",
-                    "B": "Perform a CloudWatch Logs search that uses the 'groupby' keyword and 'count' function.",
-                    "C": "Perform an Amazon Athena query that uses the 'SELECT' and 'GROUP BY' keywords.",
-                    "D": "Perform an Amazon RDS query that uses the 'SELECT' and 'GROUP BY' keywords."
-                },
+                "question": "A company has a critical serverless application using multiple AWS Lambda functions... The security team needs a count of application errors, grouped by error type, from across all of these log groups. What should a SysOps administrator do to meet this requirement?",
+                "options": { "A": "Perform a CloudWatch Logs Insights query that uses the stats command and count function.", "B": "Perform a CloudWatch Logs search that uses the groupby keyword and count function.", "C": "Perform an Amazon Athena query that uses the SELECT and GROUP BY keywords.", "D": "Perform an Amazon RDS query that uses the SELECT and GROUP BY keywords." },
                 "correctAnswer": "A",
-                "explanation": "CloudWatch Logs Insights is the purpose-built tool for this job. It allows you to interactively search and analyze log data across multiple log groups simultaneously. Its query language includes powerful commands like 'stats' and functions like 'count()', which are perfect for aggregating data, such as counting errors and grouping them by a field.",
-                "whyOthersWrong": "B: The basic CloudWatch Logs search functionality does not support powerful aggregation and grouping keywords.\nC: While possible, exporting logs to S3 and querying with Athena is more complex than using Logs Insights directly.\nD: RDS is a relational database and cannot query log data in CloudWatch Logs."
+                "explanation": "CloudWatch Logs Insights is the purpose-built tool for this job. It allows you to interactively search and analyze log data in CloudWatch Logs. It supports querying across multiple log groups simultaneously. Its query language includes powerful commands like stats and functions like count()...",
+                "whyOthersWrong": "B: The basic CloudWatch Logs search functionality does not support powerful aggregation and grouping keywords...\nC: While you could export the logs to S3 and then query them with Athena, this is a much more complex and less immediate solution...\nD: RDS is a relational database service. It has no direct way to query log data..."
             },
             {
-                "question": "A software company runs a workload on EC2 instances behind an ALB. A SysOps administrator needs to define a custom health check for the EC2 instances. What is the MOST operationally efficient solution?",
-                "options": {
-                    "A": "Set up each EC2 instance to write its status into a shared S3 bucket for the ALB to read.",
-                    "B": "Configure the health check on the ALB's target group and ensure the Health Check Path setting is correct.",
-                    "C": "Set up Amazon ElastiCache to track the EC2 instances as they scale.",
-                    "D": "Configure an Amazon API Gateway health check for all of the EC2 instances."
-                },
+                "question": "A software company runs a workload on Amazon EC2 instances behind an Application Load Balancer (ALB). A SysOps administrator needs to define a custom health check for the EC2 instances. What is the MOST operationally efficient solution?",
+                "options": { "A": "Set up each EC2 instance so that it writes its healthy/unhealthy status into a shared Amazon S3 bucket...", "B": "Configure the health check on the ALB and ensure that the Health Check Path setting is correct.", "C": "Set up Amazon ElastiCache to track the EC2 instances as they scale in and out.", "D": "Configure an Amazon API Gateway health check to ensure custom checks on all of the EC2 instances." },
                 "correctAnswer": "B",
-                "explanation": "Application Load Balancers have built-in health check functionality configured on the target group. You can specify the protocol, port, and a specific Health Check Path (e.g., /health). The ALB will periodically send requests to this path on each registered instance. If it receives a successful response (e.g., HTTP 200 OK), it considers the instance healthy. This is the standard, built-in, and most efficient method.",
-                "whyOthersWrong": "A, C, D: These are all overly complex and non-standard ways to solve a problem that has a simple, built-in solution."
+                "explanation": "Application Load Balancers have built-in health check functionality. You configure these health checks on the target group associated with the ALB. You can specify the protocol, port, and, most importantly, a specific Health Check Path... This is the standard, built-in, and most efficient way...",
+                "whyOthersWrong": "A, C, and D: These are all overly complex, non-standard, and inefficient ways to solve a problem that has a simple, built-in solution."
             },
             {
-                "question": "An errant process on an EC2 instance occasionally runs at 100% CPU utilization. A SysOps administrator wants to automatically restart the instance if this persists for more than 2 minutes. How can this be accomplished?",
-                "options": {
-                    "A": "Create a CloudWatch alarm for the EC2 instance with basic monitoring and an action to restart.",
-                    "B": "Create a CloudWatch alarm for the EC2 instance with detailed monitoring and an action to restart.",
-                    "C": "Create a Lambda function to restart the instance, invoked on a schedule every 2 minutes.",
-                    "D": "Create a Lambda function to restart the instance, invoked by EC2 health checks."
-                },
+                "question": "An errant process on an Amazon EC2 instance is known to occasionally consume an entire processor, running at 100% CPU utilization. A SysOps administrator wants to automatically restart the EC2 instance if this problem persists for more than 2 minutes. How can this be accomplished?",
+                "options": { "A": "Create an Amazon CloudWatch alarm for the EC2 instance with basic monitoring...", "B": "Create an Amazon CloudWatch alarm for the EC2 instance with detailed monitoring. Add an action to restart the instance.", "C": "Create an AWS Lambda function to restart the EC2 instance, invoked on a scheduled basis every 2 minutes.", "D": "Create an AWS Lambda function to restart the EC2 instance, invoked by EC2 health checks." },
                 "correctAnswer": "B",
-                "explanation": "A CloudWatch alarm can monitor the CPUUtilization metric. To meet the 'more than 2 minutes' requirement, you need a monitoring interval less than 2 minutes. Detailed monitoring provides metrics at a 1-minute frequency. You can set the alarm to trigger if CPUUtilization is >= 100% for 2 consecutive periods (2 minutes). CloudWatch alarms can be configured with a built-in EC2 action to Reboot the instance.",
-                "whyOthersWrong": "A: Basic monitoring provides data points every 5 minutes, which is not granular enough.\nC: A scheduled Lambda is inefficient and not event-driven like a CloudWatch alarm.\nD: EC2 health checks monitor instance reachability, not in-guest metrics like CPU utilization."
+                "explanation": "A CloudWatch alarm can monitor the CPUUtilization metric. To meet the 'more than 2 minutes' requirement, you need a monitoring interval that is less than 2 minutes. Detailed monitoring provides metrics at a 1-minute frequency. You can set the alarm to trigger if CPUUtilization is >= 100% for 2 consecutive periods (2 minutes). CloudWatch alarms can be configured with a built-in EC2 action to Reboot...",
+                "whyOthersWrong": "A: Basic monitoring for EC2 instances provides data points every 5 minutes...\nC: Invoking a Lambda function every 2 minutes... is inefficient and not event-driven...\nD: EC2 health checks... do not monitor in-guest metrics like CPU utilization."
             },
             {
-                "question": "A company is migrating several high-performance computing (HPC) virtual machines to EC2. The deployment strategy must minimize network latency and maximize network throughput between the instances. Which strategy should be chosen?",
-                "options": {
-                    "A": "Deploy the instances in a cluster placement group in one Availability Zone.",
-                    "B": "Deploy the instances in a partition placement group in two Availability Zones.",
-                    "C": "Deploy the instances in a partition placement group in one Availability Zone.",
-                    "D": "Deploy the instances in a spread placement group in two Availability Zones."
-                },
+                "question": "A company is migrating several high-performance computing (HPC) virtual machines to Amazon EC2. The deployment strategy must minimize network latency and maximize network throughput between the instances. Which strategy should the SysOps administrator choose to meet these requirements?",
+                "options": { "A": "Deploy the instances in a cluster placement group in one Availability Zone.", "B": "Deploy the instances in a partition placement group in two Availability Zones.", "C": "Deploy the instances in a partition placement group in one Availability Zone.", "D": "Deploy the instances in a spread placement group in two Availability Zones." },
                 "correctAnswer": "A",
-                "explanation": "A Cluster Placement Group is designed for exactly this use case. It packs instances close together on the same underlying hardware within a single Availability Zone. This strategy provides the lowest network latency and highest network throughput possible between the instances, which is ideal for tightly coupled HPC workloads.",
-                "whyOthersWrong": "B, C: A Partition Placement Group spreads instances across logical partitions to reduce the impact of hardware failures; it does not prioritize low-latency communication.\nD: A Spread Placement Group places each instance on distinct hardware to maximize availability, resulting in higher latency between them."
+                "explanation": "A Cluster Placement Group is designed for exactly this use case. It packs instances close together on the same underlying hardware within a single Availability Zone. This strategy provides the lowest network latency and highest network throughput possible between the instances...",
+                "whyOthersWrong": "B and C: A Partition Placement Group spreads instances across logical partitions... This strategy is designed for high availability...\nD: A Spread Placement Group places each instance on distinct underlying hardware... it results in higher latency between them compared to a cluster group."
+            },
+            {
+                "question": "A SysOps administrator launches a new Amazon EC2 Linux instance into a public subnet... every attempt to connect remotely (e.g., via SSH) results in a connection timeout error. Which action will allow the SysOps administrator to remotely connect to the instance?",
+                "options": { "A": "Add a route table entry in the public subnet...", "B": "Add an outbound network ACL rule to allow TCP port 22...", "C": "Modify the instance security group to allow inbound SSH traffic from the SysOps administrator's IP address.", "D": "Modify the instance security group to allow outbound SSH traffic..." },
+                "correctAnswer": "C",
+                "explanation": "A connection timeout error is a classic sign that a firewall is blocking the traffic... In AWS, the primary firewall protecting an EC2 instance is its Security Group. By default, security groups deny all inbound traffic. To connect to a Linux instance using SSH, you must explicitly allow inbound traffic on TCP port 22.",
+                "whyOthersWrong": "A: Route tables control the flow of traffic between subnets...\nB: This is incorrect for two reasons. First, the problem is with inbound traffic... Second, the default Network ACL allows all traffic.\nD: The connection attempt is an inbound request..."
+            },
+            {
+                "question": "A company is transitioning a web application from Amazon EC2 instances to an AWS Lambda function. During the migration, they need to route traffic based on the URL path... Which solution will meet these requirements?",
+                "options": { "A": "Configure a Gateway Load Balancer.", "B": "Configure a Network Load Balancer.", "C": "Configure a Network Load Balancer with a regular expression.", "D": "Configure an Application Load Balancer." },
+                "correctAnswer": "D",
+                "explanation": "The key requirement is path-based routing, which is a feature of the application layer (Layer 7)... An Application Load Balancer (ALB) operates at Layer 7 and is designed for this exact purpose. It can inspect the content of the request, including the URL path, and route traffic to different target groups...",
+                "whyOthersWrong": "A: A Gateway Load Balancer is a specialized service used to deploy... third-party virtual network appliances...\nB & C: A Network Load Balancer (NLB) operates at Layer 4... It is not aware of application-level content like URL paths..."
+            },
+            {
+                "question": "A SysOps administrator has an Auto Scaling group using a simple scaling policy... the metric threshold was breached twice within a 180-second period. The Auto Scaling group is using default settings. How will the number of EC2 instances... be affected...?",
+                "options": { "A": "The Auto Scaling group will launch an additional EC2 instance every time...", "B": "The Auto Scaling group will launch one EC2 instance and will wait for the default cooldown period before launching another instance.", "C": "The Auto Scaling group will send an alert to the ALB to rebalance the traffic...", "D": "The Auto Scaling group will try to distribute the traffic among all EC2 instances..." },
+                "correctAnswer": "B",
+                "explanation": "Simple scaling policies have a cooldown period to prevent the Auto Scaling group from launching or terminating additional instances before the effects of a previous scaling activity are visible. The default cooldown period is 300 seconds (5 minutes). When the first alarm triggers, the Auto Scaling group launches a new instance and enters the cooldown period.",
+                "whyOthersWrong": "A: This describes behavior without a cooldown period...\nC: The Auto Scaling group's primary function is to adjust the number of instances...\nD: The ALB is responsible for distributing traffic."
+            },
+            {
+                "question": "A company's application uses a single Amazon RDS DB instance. They are concerned about the lack of a failover solution and need to implement one that is automatic and does not lose any committed transactions... Which solution will meet these requirements?",
+                "options": { "A": "Create an RDS read replica in the same AWS Region.", "B": "Create an RDS read replica in a different AWS Region.", "C": "Modify the DB instance to be a Multi-AZ deployment.", "D": "Set up a CloudWatch alarm to restart the DB instance if memory utilization is high." },
+                "correctAnswer": "C",
+                "explanation": "The requirements are for automatic failover and no data loss (zero RPO...). The AWS feature designed specifically for this is an RDS Multi-AZ deployment. When you enable Multi-AZ, RDS automatically provisions and maintains a synchronous standby replica in a different Availability Zone (AZ).",
+                "whyOthersWrong": "A & B: Read replicas are primarily for scaling read traffic... They use asynchronous replication, which means there is a small delay...\nD: This is a monitoring solution, not a high-availability or failover solution."
+            },
+            {
+                "question": "A company uses AWS Organizations with separate Organizational Units (OUs) for production and development. A corporate policy dictates that developers can only use a specific list of approved AWS services within the production account. What is the MOST operationally efficient solution to control the production account?",
+                "options": { "A": "Create a customer managed policy in AWS Identity and Access Management (IAM)...", "B": "Create a job function policy in AWS Identity and Access Management (IAM)...", "C": "Create a service control policy (SCP). Apply the SCP to the production OU.", "D": "Create an IAM policy. Apply the policy in Amazon API Gateway..." },
+                "correctAnswer": "C",
+                "explanation": "Service Control Policies (SCPs) are a feature of AWS Organizations designed for this exact purpose. SCPs offer central control over the maximum available permissions for all accounts in your organization. By attaching an SCP to the production OU that explicitly denies access to all services except the approved ones, you create a preventative guardrail.",
+                "whyOthersWrong": "A & B: Using IAM policies is less efficient. You would need to ensure that every single IAM user and role... has this policy attached...\nD: Amazon API Gateway is a service for creating, publishing, and securing APIs. It has no capability to enforce broad service-level permissions..."
+            },
+            {
+                "question": "A company wants to monitor the number of running EC2 instances and automatically request a service quota increase when the count approaches the current limit. Which solution meets these requirements?",
+                "options": { "A": "Create an Amazon CloudWatch alarm to monitor Service Quotas. Configure the alarm to invoke an AWS Lambda function to request a quota increase...", "B": "Create an AWS Config rule to monitor Service Quotas.", "C": "Create an Amazon CloudWatch alarm to monitor the AWS Health Dashboard.", "D": "Create an Amazon CloudWatch alarm to monitor AWS Trusted Advisor service quotas. Configure the alarm to publish a message to an Amazon Simple Notification Service (Amazon SNS) topic..." },
+                "correctAnswer": "A",
+                "explanation": "This solution provides a complete, automated workflow. Service Quotas integrates with CloudWatch, allowing you to create alarms based on your usage... When the CloudWatch alarm enters the ALARM state, it can be configured to trigger an AWS Lambda function. This function can then use the AWS SDK to programmatically call the RequestServiceQuotaIncrease API action...",
+                "whyOthersWrong": "B: AWS Config is used to assess, audit, and evaluate the configurations of your AWS resources...\nC: The AWS Health Dashboard provides information about service health...\nD: While Trusted Advisor does check for service limits... an SNS topic by itself cannot perform an action like requesting a quota increase."
+            },
+            {
+                "question": "A SysOps administrator uses AWS CloudFormation to manage a stack of EC2 instances. The administrator needs to ensure that if the CloudFormation stack is deleted, the EC2 instances and all their associated data (on their EBS volumes) are preserved. Which solution will meet these requirements?",
+                "options": { "A": "Set the DeletionPolicy attribute to Snapshot for the EC2 instance resource...", "B": "Automate backups by using Amazon Data Lifecycle Manager (Amazon DLM).", "C": "Create a backup plan in AWS Backup.", "D": "Set the DeletionPolicy attribute to Retain for the EC2 instance resource..." },
+                "correctAnswer": "D",
+                "explanation": "The DeletionPolicy is a CloudFormation resource attribute that tells CloudFormation what to do with a resource when its stack is deleted... Setting DeletionPolicy: Retain instructs CloudFormation to leave the resource intact when the stack is deleted.",
+                "whyOthersWrong": "A: The Snapshot deletion policy applies to resources that support snapshots, like AWS::EC2::Volume... It does not apply directly to the AWS::EC2::Instance resource itself.\nB & C: AWS Backup and DLM... do not prevent CloudFormation from deleting the original EC2 instance..."
+            },
+            {
+                "question": "A company runs a MySQL database on a single EC2 instance. A SysOps administrator needs to find the MOST operationally efficient solution to minimize both potential data loss and recovery time in case of a database failure. What is the MOST operationally efficient solution that meets these requirements?",
+                "options": { "A": "Create a CloudWatch alarm to stop and start the EC2 instance on failure.", "B": "Create an Amazon RDS for MySQL Multi-AZ DB instance. Use a MySQL native backup... to restore the data...", "C": "Create an Amazon RDS for MySQL Single-AZ DB instance with a read replica.", "D": "Use Amazon Data Lifecycle Manager (Amazon DLM) to take an hourly snapshot of the EBS volume." },
+                "correctAnswer": "B",
+                "explanation": "Migrating the database from a self-managed EC2 instance to Amazon RDS for MySQL with Multi-AZ is the most operationally efficient and robust solution. RDS is a managed service, which offloads operational tasks... The Multi-AZ feature provides a hot standby in a different Availability Zone with synchronous replication, ensuring minimal data loss (RPO near zero) and fast, automatic failover (low RTO).",
+                "whyOthersWrong": "A: Stopping and starting an instance might resolve a software issue but does nothing to protect against an underlying hardware or AZ failure.\nC: A read replica uses asynchronous replication, which can lead to data loss during a failover...\nD: While DLM automates snapshots, this solution has a higher RPO (up to one hour of data loss) and a much higher RTO."
+            },
+            {
+                "question": "A SysOps administrator needs to implement a cost-saving solution to automatically stop development EC2 instances when they are not in use. An instance is considered 'not in use' if its average CPU utilization is lower than 5% for 30 minutes. Which solution will meet this requirement?",
+                "options": { "A": "Assess AWS CloudTrail logs to verify that there is no EC2 API activity.", "B": "Create an Amazon CloudWatch alarm to stop the EC2 instances when the average CPU utilization is lower than 5% for a 30-minute period.", "C": "Create an Amazon CloudWatch metric to stop the EC2 instances when the VolumeReadBytes metric is lower than 500.", "D": "Use AWS Config to invoke a Lambda function to stop the instances based on resource configuration changes." },
+                "correctAnswer": "B",
+                "explanation": "This is a classic use case for Amazon CloudWatch Alarms. CloudWatch natively monitors metrics like CPUUtilization for EC2 instances. You can create an alarm that triggers when a metric crosses a defined threshold for a specified duration. Crucially, CloudWatch Alarms can be configured to take direct actions, including stopping, terminating, or rebooting an EC2 instance.",
+                "whyOthersWrong": "A: AWS CloudTrail is a service that logs API calls... not for monitoring real-time performance metrics...\nC: VolumeReadBytes is a metric for disk I/O... CPU utilization is the metric specified in the requirement...\nD: AWS Config is a service that tracks changes to your resource configurations... It does not monitor performance metrics..."
+            },
+            {
+                "question": "A company's application using an RDS for MySQL Multi-AZ instance is frequently reporting 'too many connections' errors. A SysOps administrator needs to resolve this with minimal code changes and in the most cost-effective way. Which solution will meet these requirements MOST cost-effectively?",
+                "options": { "A": "Modify the RDS for MySQL DB instance to a larger instance size.", "B": "Modify the RDS for MySQL DB instance to Amazon DynamoDB.", "C": "Configure RDS Proxy. Modify the application configuration file to use the RDS Proxy endpoint.", "D": "Modify the RDS for MySQL DB instance to a memory optimized DB instance." },
+                "correctAnswer": "C",
+                "explanation": "The 'too many connections' error indicates that the application is opening and closing connections inefficiently... RDS Proxy is a fully managed, highly available database proxy that is specifically designed to solve this problem. It sits between the application and the database, pooling and sharing database connections.",
+                "whyOthersWrong": "A & D: Scaling the instance up to a larger or memory-optimized size might increase the maximum number of connections, but it's a costly solution that doesn't fix the root cause...\nB: Migrating from a relational database (MySQL) to a NoSQL database (DynamoDB) is a massive undertaking..."
+            },
+            {
+                "question": "A Lambda function, which currently runs outside a VPC and accesses the internet, is being modified. It now needs to store data in an RDS database located in a private subnet of a VPC. The function must maintain its ability to access the internet. Which solution meets these requirements?",
+                "options": { "A": "Create a new Lambda function with VPC access and an Elastic IP address.", "B": "Create a new Lambda function with VPC access and two public IP addresses.", "C": "Reconfigure the Lambda function for VPC access. Add NAT gateways to the public subnets. Add route table entries in the private subnets to route through the NAT gateways. Attach the function to the private subnets.", "D": "Reconfigure the Lambda function for VPC access. Attach the function to the private subnets. Add route table entries in the private subnets to route through the internet gateway." },
+                "correctAnswer": "C",
+                "explanation": "To access a resource inside a VPC... the Lambda function must be configured for VPC access... Placing it in the private subnet allows it to communicate directly with the RDS instance. However, resources in a private subnet cannot access the internet directly. The standard AWS architecture to grant internet access to resources in a private subnet is to use a NAT Gateway.",
+                "whyOthersWrong": "A & B: Lambda functions cannot be assigned public or Elastic IP addresses.\nD: Resources in a private subnet cannot have a route directly to an Internet Gateway."
+            },
+            {
+                "question": "A company uses AWS Organizations and needs a centralized solution to create standard CloudWatch alarms in all accounts and send alerts to a central logging account when a metric crosses a threshold. Which solution will meet these requirements?",
+                "options": { "A": "Deploy an AWS CloudFormation stack set to the accounts in the organization...", "B": "Deploy an AWS CloudFormation stack in each account.", "C": "Deploy an AWS Lambda function on a cron job in each account.", "D": "Deploy an AWS CloudFormation change set to the organization." },
+                "correctAnswer": "A",
+                "explanation": "AWS CloudFormation StackSets are designed for this exact use case. A StackSet allows you to create, update, or delete stacks across multiple accounts and regions with a single operation. You can define a template for your standard CloudWatch alarms and then deploy this template as a StackSet...",
+                "whyOthersWrong": "B & C: Deploying resources manually or with individual scripts in each account is the opposite of a centralized, operationally efficient solution.\nD: A CloudFormation change set is a preview of the changes a stack update will make."
+            },
+            {
+                "question": "A SysOps administrator needs to create a CloudWatch alarm that triggers only when all target instances registered with an Application Load Balancer (ALB) are unhealthy. Which condition should be used with the alarm?",
+                "options": { "A": "AWS/ApplicationELB HealthyHostCount <= 0", "B": "AWS/ApplicationELB UnHealthyHostCount >= 1", "C": "AWS/EC2 StatusCheckFailed <= 0", "D": "AWS/EC2 StatusCheckFailed >= 1" },
+                "correctAnswer": "A",
+                "explanation": "The requirement is to trigger an alarm when all hosts are unhealthy. The most direct way to measure this is to check the number of healthy hosts. The HealthyHostCount metric for an ALB's target group tracks the number of healthy instances. If all instances are unhealthy, this count will be zero.",
+                "whyOthersWrong": "B: The UnHealthyHostCount >= 1 condition would trigger an alarm if even a single instance becomes unhealthy...\nC & D: These are EC2 metrics, not ALB metrics... The ALB could mark an instance as unhealthy... even if the EC2 status checks are passing."
+            },
+            {
+                "question": "A legacy, CPU-intensive application runs on a single t3.large EC2 instance and can only be scaled vertically. The instance is experiencing 90% CPU usage and performance latency. What change should be made to alleviate the performance problem?",
+                "options": { "A": "Change the Amazon EBS volume to Provisioned IOPS.", "B": "Upgrade to a compute-optimized instance.", "C": "Add additional t2.large instances to the application.", "D": "Purchase Reserved Instances." },
+                "correctAnswer": "B",
+                "explanation": "The problem is clearly stated as high CPU usage (90%) causing a performance bottleneck... The most direct solution is to provide the application with more CPU power. Compute-optimized instance families (like the C-family, e.g., c5.large) are specifically designed for compute-bound applications...",
+                "whyOthersWrong": "A: Changing the EBS volume type addresses disk I/O performance...\nC: The question explicitly states the application can only be scaled vertically...\nD: Purchasing Reserved Instances is a billing construct... It does not change the performance..."
+            },
+            {
+                "question": "A SysOps administrator launches an EC2 instance in a private subnet. When trying to run a curl command to an external website (https://www.example.com), the connection fails. What should the SysOps administrator do to resolve this issue?",
+                "options": { "A": "Ensure that there is an outbound security group for port 443 to 0.0.0.0/0.", "B": "Ensure that there is an inbound security group for port 443 from 0.0.0.0/0.", "C": "Ensure that there is an outbound network ACL for ephemeral ports 1024-65535 to 0.0.0.0/0.", "D": "Ensure that there is an outbound network ACL for port 80 to 0.0.0.0/0." },
+                "correctAnswer": "A",
+                "explanation": "An instance in a private subnet needs a NAT Gateway... and a corresponding route... to reach the internet... A curl to https://www.example.com is an outbound request on port 443 (HTTPS). By default, a security group's outbound rules allow all traffic. However, if this default has been removed, you would need to explicitly add an outbound rule...",
+                "whyOthersWrong": "B: An inbound security group rule is for traffic coming to the instance...\nC: The outbound request is to destination port 443, not to an ephemeral port...\nD: The request is to https, which uses port 443, not http which uses port 80."
+            },
+            {
+                "question": "A legacy application causes errors when CPU utilization on its EC2 instance exceeds 80%. A short-term solution is needed to automatically reboot the instance when this happens. The solution should have the LEAST operational overhead. Which solution meets these requirements?",
+                "options": { "A": "Write a script that runs as a cron job to monitor and reboot the instance.", "B": "Add an Amazon CloudWatch alarm for CPU utilization and configure the alarm action to reboot the EC2 instances.", "C": "Create an Amazon EventBridge rule to invoke a Lambda function to restart the instances.", "D": "Add a CloudWatch alarm and configure an AWS Systems Manager Automation runbook to reboot the instances." },
+                "correctAnswer": "B",
+                "explanation": "This solution is the most direct and has the least operational overhead. CloudWatch Alarms can be configured to take several built-in actions directly, one of which is to reboot an EC2 instance. This requires no scripting, no Lambda functions, and no Systems Manager runbooks.",
+                "whyOthersWrong": "A: Writing and maintaining a custom script... introduces significant operational overhead...\nC & D: While both of these solutions would work, they are more complex and have more operational overhead than the direct CloudWatch alarm action."
+            },
+            {
+                "question": "A company wants to ensure that all business units can only provision EC2 instances using pre-approved, standardized configurations. What should a SysOps administrator do to implement this requirement?",
+                "options": { "A": "Create an EC2 instance launch configuration.", "B": "Develop an IAM policy that limits the business units to provision EC2 instances only.", "C": "Publish a product and launch constraint role for EC2 instances by using AWS Service Catalog...", "D": "Share an AWS CloudFormation template with the business units." },
+                "correctAnswer": "C",
+                "explanation": "AWS Service Catalog is the service designed for creating and managing catalogs of IT services that are approved for use on AWS. An administrator can define a 'product'... and grant business units access to this portfolio. Users can then launch these pre-approved products without needing underlying permissions to the services themselves...",
+                "whyOthersWrong": "A: Launch configurations are an older component of Auto Scaling groups and don't provide a broad governance mechanism...\nB & D: Simply providing an IAM policy or a CloudFormation template doesn't enforce the use of the approved configuration."
+            },
+            {
+                "question": "A company's architecture team requires immediate email notification whenever a new EC2 instance is launched in the production account. What should a SysOps administrator do to meet this requirement?",
+                "options": { "A": "Use a user data script to send an email.", "B": "Create an Amazon SNS topic with an email subscription. Create an Amazon EventBridge rule that reacts to EC2 instance launches and targets the SNS topic.", "C": "Use an Amazon SQS queue with an email subscription.", "D": "Use AWS Systems Manager to publish events to an SNS topic..." },
+                "correctAnswer": "B",
+                "explanation": "This is the standard, event-driven, serverless pattern for this type of notification. Amazon EventBridge... can capture events happening in your AWS account, such as an EC2 instance changing to the 'running' state. You create a rule that matches this specific event. The rule's target can be an Amazon SNS topic.",
+                "whyOthersWrong": "A: Relying on a user data script is unreliable...\nC: Amazon SQS (Simple Queue Service) is a message queue; it cannot send emails directly...\nD: This is an overly complex and convoluted architecture."
+            },
+            {
+                "question": "A company's finance team needs detailed dashboards to track AWS cost changes across the entire organization, with granularity down to the hour. What is the MOST operationally efficient way to meet these requirements?",
+                "options": { "A": "Generate Amazon CloudWatch dashboards by using CloudWatch insights and AWS Cost Explorer data.", "B": "Generate an AWS Cost and Usage Report (CUR). Store it in S3. Use Amazon Athena to query the data and Amazon QuickSight to build dashboards.", "C": "Create a Lambda function that runs daily to pull data from Cost Explorer.", "D": "Create an IAM user for the finance team with access to Cost Explorer." },
+                "correctAnswer": "B",
+                "explanation": "This describes the standard, recommended AWS architecture for detailed cost analysis... The AWS Cost and Usage Report (CUR) is the most comprehensive source of cost and usage data... By delivering the CUR to an S3 bucket, you create a data lake... Amazon Athena can then be used to run complex SQL queries... Finally, Amazon QuickSight can connect to Athena...",
+                "whyOthersWrong": "A: Cost Explorer data cannot be directly integrated into CloudWatch dashboards in this manner...\nC: Cost Explorer's API does not provide the same level of detail as the CUR...\nD: Simply giving access to the Cost Explorer console is not sufficient."
+            },
+            {
+                "question": "A workload on an EC2 instance needs a temporary cache for frequently changing data. The highest possible performance is required, and the data does not need to be retained if the instance restarts. Which storage option will provide the HIGHEST performance for the cache?",
+                "options": { "A": "General Purpose SSD (gp3) Amazon Elastic Block Store (Amazon EBS) volume", "B": "Provisioned IOPS SSD (io2) Amazon Elastic Block Store (Amazon EBS) volume", "C": "Throughput Optimized HDD (st1) Amazon Elastic Block Store (Amazon EBS) volume", "D": "EC2 instance store" },
+                "correctAnswer": "D",
+                "explanation": "EC2 instance store... provides block-level storage that is physically attached to the host computer... Because it is directly attached, it offers the lowest latency and highest I/O performance possible... The key tradeoff... is that the data is non-persistent...",
+                "whyOthersWrong": "A, B, C: These are all types of Amazon EBS volumes. EBS provides persistent, network-attached storage. While high-performance options like io2 exist, they will always have slightly higher latency than a physically attached instance store..."
+            },
+            {
+                "question": "A SysOps administrator is troubleshooting an Amazon Linux 2 EC2 instance where the CloudWatch agent is running and correctly configured, but no logs are being published to CloudWatch Logs. What should the SysOps administrator do to resolve the issue?",
+                "options": { "A": "Configure the AWS CLI and use a cron job to push logs.", "B": "Inspect the retention period of the log group.", "C": "Set up an Amazon Kinesis data stream.", "D": "Ensure that the IAM role that is attached to the EC2 instance has the necessary permissions for CloudWatch Logs." },
+                "correctAnswer": "D",
+                "explanation": "For the CloudWatch agent on an EC2 instance to send logs to the CloudWatch Logs service, it needs permission to make API calls to that service. These permissions are granted via an IAM role attached to the instance. If the agent is running and configured correctly, the most common cause of failure is a missing or incorrect IAM role.",
+                "whyOthersWrong": "A: This is a cumbersome workaround that bypasses the agent...\nB: The log group retention period determines how long logs are kept after they arrive...\nC: Kinesis is a service for streaming data at scale. It's not required for the basic functionality of the CloudWatch agent..."
             },
             {
                 "question": "In the AWS Storage Gateway, using the ________ you can cost-effectively and durably archive backup data in Amazon Glacier.",
-                "options": {
-                    "A": "Gateway-virtual tape library (Gateway-VTL)",
-                    "B": "Gateway-stored volume",
-                    "C": "Gateway-cached volume",
-                    "D": "Volume gateway"
-                },
+                "options": { "A": "Gateway-virtual tape library (Gateway-VTL)", "B": "Gateway-stored volume", "C": "Gateway-volume", "D": "Volume gateway" },
                 "correctAnswer": "A",
                 "explanation": "The Gateway-Virtual Tape Library (Gateway-VTL) allows you to use your existing tape-based backup applications with Amazon Glacier for cost-effective and durable archiving."
             },
             {
-                "question": "A company uses AWS Organizations and needs to centrally manage user accounts and permissions, integrated with their on-premises Active Directory. They have IAM Identity Center and a Direct Connect connection set up. What is the MOST operationally efficient solution?",
-                "options": {
-                    "A": "Create a Simple AD domain and establish a forest trust with the on-premises AD.",
-                    "B": "Create an AD domain controller on an EC2 instance joined to the on-premises AD.",
-                    "C": "Create an AD Connector associated with the on-premises Active Directory domain and set it as the identity source for IAM Identity Center.",
-                    "D": "Use the built-in SSO directory and copy users and groups from the on-premises AD."
-                },
+                "question": "A company uses AWS Organizations... A SysOps administrator must implement a solution to ensure that user accounts and permissions are centrally managed. The solution must be integrated with the company's existing on-premises Active Directory environment... What is the MOST operationally efficient solution...?",
+                "options": { "A": "Create a Simple AD domain, and establish a forest trust relationship...", "B": "Create an Active Directory domain controller on an Amazon EC2 instance...", "C": "Create an AD Connector that is associated with the on-premises Active Directory domain...", "D": "Use the built-in SSO directory as the identity source..." },
                 "correctAnswer": "C",
-                "explanation": "An AD Connector provides a centralized way to manage user identities from your existing on-premises Active Directory without needing to create and manage separate user accounts in AWS. It simplifies administration and leverages the existing Direct Connect connection.",
-                "whyOthersWrong": "A & B: Creating a Simple AD or a domain controller on EC2 involves more management overhead than an AD Connector.\nD: Copying users and groups is inefficient, and changes in the on-premises AD would not automatically reflect in IAM Identity Center."
+                "explanation": "An AD Connector provides a centralized way to manage user identities from your existing on-premises Active Directory, reducing the need to create and manage separate user accounts in AWS. It simplifies administration...",
+                "whyOthersWrong": "A: Creating a Simple AD domain and establishing a forest trust would involve more management overhead...\nB: Creating and managing an Active Directory domain controller on an Amazon EC2 instance adds operational overhead...\nD: Using the built-in SSO directory and copying users/groups is less operationally efficient..."
             },
             {
-                "question": "A company wants to apply an existing Route 53 private hosted zone to a new VPC for customized resource name resolution. The VPC is created and record sets are added to the zone. What is the final step?",
-                "options": {
-                    "A": "Associate the Route 53 private hosted zone with the VPC.",
-                    "B": "Create a security group rule allowing traffic to the Route 53 Resolver.",
-                    "C": "Ensure the VPC network ACLs allow traffic to the Route 53 Resolver.",
-                    "D": "Ensure there is a route to the Route 53 Resolver in the VPC route tables."
-                },
+                "question": "A company wants to apply an existing Amazon Route 53 private hosted zone to a new VPC to allow for customized resource name resolution within the VPC... Which step should the SysOps administrator take to complete the setup?",
+                "options": { "A": "Associate the Route 53 private hosted zone with the VPC.", "B": "Create a rule in the default security group for the VPC...", "C": "Ensure the VPC network ACLs allow traffic to the Route 53 Resolver.", "D": "Ensure there is a route to the Route 53 Resolver in each of the VPC route tables." },
                 "correctAnswer": "A",
-                "explanation": "To enable a private hosted zone to resolve DNS queries for resources within a VPC, you must explicitly associate the private hosted zone with that VPC. This is the fundamental step for private DNS resolution in Route 53.",
-                "whyOthersWrong": "B, C, D: These are related to general network connectivity but are not the direct action required to link a private hosted zone to a VPC for name resolution."
+                "explanation": "To enable a private hosted zone to resolve DNS queries for resources within a VPC, you must explicitly associate the private hosted zone with that VPC. This is a fundamental step for private DNS resolution in Route 53.",
+                "whyOthersWrong": "B, C, and D are generally related to network connectivity but are not the direct action required to link a private hosted zone to a VPC for name resolution."
             },
             {
-                "question": "On-premises users are unable to connect via RDP to a Windows EC2 instance in a private subnet over a Site-to-Site VPN, receiving a timeout error. All security groups and on-premises firewalls are configured correctly. How should the SysOps administrator troubleshoot this?",
-                "options": {
-                    "A": "Create CloudWatch logs for the EC2 instance.",
-                    "B": "Create CloudWatch logs for the Site-to-Site VPN connection.",
-                    "C": "Create VPC flow logs for the EC2 instance's elastic network interface to check for rejected traffic.",
-                    "D": "Instruct users to use EC2 Instance Connect."
-                },
+                "question": "A company has an AWS Site-to-Site VPN connection... A SysOps administrator launches an Amazon EC2 instance that has only a private IP address into a private subnet... The on-premises users are unable to connect to the EC2 instance and receive a timeout error. What should the SysOps administrator do to troubleshoot this issue?",
+                "options": { "A": "Create Amazon CloudWatch logs for the EC2 instance...", "B": "Create Amazon CloudWatch logs for the Site-to-Site VPN connection...", "C": "Create VPC flow logs for the EC2 instance's elastic network interface to check for rejected traffic.", "D": "Instruct users to use EC2 Instance Connect as a connection method." },
                 "correctAnswer": "C",
-                "explanation": "VPC Flow Logs capture information about the IP traffic going to and from network interfaces in your VPC. By enabling flow logs, the administrator can see if RDP traffic is reaching the instance and if it's being rejected by security groups or Network ACLs within the VPC, which is crucial for pinpointing where the traffic is being dropped.",
-                "whyOthersWrong": "A: Instance-level logs would not show network-level blocked traffic.\nB: VPN logs show tunnel status but not detailed traffic to a specific EC2 instance.\nD: EC2 Instance Connect is primarily for SSH access to Linux instances, not RDP to Windows."
+                "explanation": "VPC Flow Logs capture information about the IP traffic going to and from network interfaces in your VPC. By enabling flow logs for the EC2 instance's elastic network interface, the SysOps administrator can see if RDP traffic is even reaching the instance and if it's being rejected by security groups or Network ACLs within the VPC.",
+                "whyOthersWrong": "A: CloudWatch logs for the EC2 instance itself would typically show application-level logs... not network-level blocked traffic.\nB: While VPN CloudWatch logs can show the status of the VPN tunnel, they wouldn't provide detailed information about traffic reaching a specific EC2 instance...\nD: EC2 Instance Connect is a connection method primarily for SSH access to Linux instances..."
             },
             {
-                "question": "A SysOps administrator sets up a new EC2 web server in a public subnet. Internet connectivity is confirmed (OS updates work), but the instance cannot be accessed from a web browser. Which three steps should be taken to troubleshoot?",
-                "options": {
-                    "A": "Ensure inbound security group rules allow ports 80/443.",
-                    "B": "Ensure outbound security group rules allow ports 80/443.",
-                    "C": "Ensure inbound network ACL rules allow ephemeral ports.",
-                    "D": "Ensure outbound network ACL rules allow ephemeral ports.",
-                    "E": "Ensure the instance's OS-level firewall allows inbound traffic on ports 80/443.",
-                    "F": "Ensure AWS WAF is turned on and blocking traffic."
-                },
+                "question": "A SysOps administrator has set up a new Amazon EC2 instance as a web server in a public subnet... the SysOps administrator cannot access the instance from a web browser on the internet. Which combination of steps should the SysOps administrator take to troubleshoot this issue? (Choose three.)",
+                "options": { "A": "Ensure that the inbound rules of the instance's security group allow traffic on ports 80 and 443.", "B": "Ensure that the outbound rules of the instance's security group allow traffic on ports 80 and 443.", "C": "Ensure that ephemeral ports 1024-65535 are allowed in the inbound rules of the network ACL...", "D": "Ensure that ephemeral ports 1024-65535 are allowed in the outbound rules of the network ACL...", "E": "Ensure that the filtering rules for any firewalls that are running on the instance allow inbound traffic on ports 80 and 443.", "F": "Ensure that AWS WAF is turned on for the instance and is blocking web traffic." },
                 "correctAnswer": "A", // Merged A, D, E
-                "explanation": "First, the instance's security group must have inbound rules allowing traffic on ports 80 and 443. Second, because Network ACLs are stateless, the outbound rules must allow return traffic on ephemeral ports (1024-65535). Third, the instance's own operating system-level firewall (like Windows Firewall) must also allow inbound traffic on ports 80 and 443.",
-                "whyOthersWrong": "B: Outbound traffic is already working since OS updates were downloaded.\nC: Ephemeral ports are needed for outbound return traffic, not inbound requests.\nF: AWS WAF is not a default component and is an unlikely cause for a basic access issue."
+                "explanation": "Security groups act as virtual firewalls... If the inbound rules for ports 80 and 443 are not open, external web traffic will be blocked... Network ACLs are stateless... the outbound rules of the network ACL must allow traffic on these ephemeral ports... An EC2 instance... can have its own operating system-level firewall... If this internal firewall is blocking inbound traffic...",
+                "whyOthersWrong": "B: The question states that downloading OS updates worked, which implies outbound traffic... is already functioning.\nC: Ephemeral ports are primarily needed for the outbound return traffic...\nF: AWS WAF... is not a default component in a basic EC2 web server setup..."
             },
             {
-                "question": "A SysOps administrator notices millions of LIST requests on an S3 bucket. Which two services can be used to investigate where the requests are coming from?",
-                "options": {
-                    "A": "AWS CloudTrail data events",
-                    "B": "Amazon EventBridge",
-                    "C": "AWS Health Dashboard",
-                    "D": "Amazon S3 server access logging",
-                    "E": "AWS Trusted Advisor"
-                },
+                "question": "A SysOps administrator has noticed millions of LIST requests on an Amazon S3 bucket. Which services or features can the administrator use to investigate where the requests are coming from? (Choose two.)",
+                "options": { "A": "AWS CloudTrail data events", "B": "Amazon EventBridge", "C": "AWS Health Dashboard", "D": "Amazon S3 server access logging", "E": "AWS Trusted Advisor" },
                 "correctAnswer": "A", // Merged A and D
-                "explanation": "AWS CloudTrail data events record API activity, including S3 bucket access, identifying the caller's identity and IP address. Additionally, enabling server access logging on the S3 bucket captures detailed records for every request, including the requester's IP address.",
-                "whyOthersWrong": "B: EventBridge is an event bus and doesn't provide detailed request logging.\nC: Health Dashboard is for AWS service health, not S3 request logging.\nE: Trusted Advisor provides best practice recommendations, not detailed request logs."
+                "explanation": "AWS CloudTrail records API activity within your AWS account, including S3 bucket access. By analyzing CloudTrail logs, the administrator can identify the source of the LIST requests... Enabling server access logging on the S3 bucket allows the administrator to capture detailed records for every request made to the bucket.",
+                "whyOthersWrong": "B: Amazon EventBridge is a serverless event bus... it doesn't provide detailed logging of S3 LIST requests...\nC: AWS Health Dashboard provides personalized views of the health of AWS services...\nD: AWS Trusted Advisor provides recommendations... It doesn't provide detailed request logs for an S3 bucket."
             },
             {
-                "question": "A SysOps administrator configures VPC flow logs to publish to CloudWatch Logs but notices less traffic than expected, believing the logs are incomplete. What is a possible reason?",
-                "options": {
-                    "A": "CloudWatch Logs throttling has been applied.",
-                    "B": "The CloudWatch IAM role lacks a trust relationship with the VPC flow logs service.",
-                    "C": "The VPC flow log is still in the process of being created.",
-                    "D": "VPC flow logs cannot capture traffic from on-premises servers to a VPC."
-                },
+                "question": "A SysOps administrator configures VPC flow logs to publish to Amazon CloudWatch Logs. The SysOps administrator reviews the logs... and notices less traffic than expected... the SysOps administrator believes that the VPC flow logs are incomplete. Which of the following is a possible reason for the difference in traffic?",
+                "options": { "A": "CloudWatch Logs throttling has been applied.", "B": "The CloudWatch IAM role does not have a trust relationship with the VPC flow logs service.", "C": "The VPC flow log is still in the process of being created.", "D": "VPC flow logs cannot capture traffic from on-premises servers to a VPC." },
                 "correctAnswer": "A",
-                "explanation": "CloudWatch Logs has service quotas and can apply throttling when limits are reached. If throttling occurs, some log events might be dropped, leading to incomplete log data. This is a plausible explanation for missing traffic when compared to other log sources.",
-                "whyOthersWrong": "B: If the IAM role were incorrect, no logs would be delivered, not just an incomplete set.\nC: A creation delay wouldn't cause a sustained discrepancy.\nD: VPC Flow Logs do capture traffic from on-premises servers that enters the VPC."
+                "explanation": "CloudWatch Logs has service quotas and can apply throttling when limits are reached. If throttling occurs, some log events might be dropped, leading to incomplete log data in CloudWatch Logs.",
+                "whyOthersWrong": "B: If the IAM role lacked the correct trust relationship or permissions, no logs would be delivered...\nC: While there might be a short delay, an 'incomplete' set of logs due to ongoing creation typically wouldn't be the primary cause...\nD: VPC Flow Logs do capture information about IP traffic going to and from network interfaces in your VPC, which includes traffic originating from on-premises servers..."
             },
             {
-                "question": "A company has a t3.large EC2 instance with high CPU utilization running a test web application that would operate better on a compute optimized instance. What should a SysOps administrator do to make this change?",
-                "options": {
-                    "A": "Migrate the EC2 instance using AWS VM Import/Export.",
-                    "B": "Enable hibernation, change the instance type, then disable hibernation.",
-                    "C": "Stop the EC2 instance, change the instance type, then start the instance.",
-                    "D": "Change the instance type while the EC2 instance is running."
-                },
+                "question": "A company has an Amazon EC2 instance that has high CPU utilization. The EC2 instance is a t3.large instance... The company discovers that the web application would operate better on a compute optimized large instance. What should a SysOps administrator do to make this change?",
+                "options": { "A": "Migrate the EC2 instance to a compute optimized instance by using AWS VM Import/Export.", "B": "Enable hibernation on the EC2 instance. Change the instance type... Disable hibernation...", "C": "Stop the EC2 instance. Change the instance type to a compute optimized instance. Start the EC2 instance.", "D": "Change the instance type to a compute optimized instance while the EC2 instance is running." },
                 "correctAnswer": "C",
-                "explanation": "To change the instance type of an Amazon EC2 instance, you must first stop the instance. Once it is in the 'stopped' state, you can modify its instance type to the desired compute-optimized instance. After the change, you can start the instance again.",
-                "whyOthersWrong": "A: VM Import/Export is for migrating VMs from on-premises, not changing an existing EC2 instance type.\nB: Hibernation is not a prerequisite for changing the instance type.\nD: It is not possible to change the instance type of a running EC2 instance."
+                "explanation": "To change the instance type of an Amazon EC2 instance, you must first stop the instance. Once stopped, you can modify its instance type to the desired compute-optimized instance. After the change, you can start the instance again.",
+                "whyOthersWrong": "A: AWS VM Import/Export is used for importing virtual machine images from your on-premises environment...\nB: Hibernation allows an instance to pause its execution and resume later, but it's not a prerequisite...\nD: It is not possible to change the instance type of a running EC2 instance."
             },
             {
-                "question": "A new Lambda function was deployed 15 minutes ago and invoked many times, but no log messages are appearing in CloudWatch Logs. What is one cause of this?",
-                "options": {
-                    "A": "The developers did not enable log messages for this Lambda function.",
-                    "B": "The Lambda function's execution role does not include permissions to write to CloudWatch Logs.",
-                    "C": "The Lambda function raises an exception before the first log statement is reached.",
-                    "D": "The Lambda function creates local log files that have to be shipped to CloudWatch Logs."
-                },
+                "question": "A development team created and deployed a new AWS Lambda function 15 minutes ago. Although the function was invoked many times, Amazon CloudWatch Logs are not showing any log messages. What is one cause of this?",
+                "options": { "A": "The developers did not enable log messages for this Lambda function.", "B": "The Lambda function's role does not include permissions to create CloudWatch Logs items.", "C": "The Lambda function raises an exception before the first log statement has been reached.", "D": "The Lambda functions creates local log files that have to be shipped to CloudWatch Logs first..." },
                 "correctAnswer": "B",
-                "explanation": "For a Lambda function to send its logs to CloudWatch Logs, the IAM execution role associated with it must have the necessary permissions (e.g., logs:CreateLogGroup, logs:CreateLogStream, logs:PutLogEvents). If these permissions are missing, the function will execute but will be unable to publish its logs.",
-                "whyOthersWrong": "A: Logging is generally enabled by default if permissions are correct.\nC: Even if an exception occurs, the runtime environment often attempts to log the error. A complete lack of logs points to a permissions problem.\nD: Lambda integrates directly with CloudWatch Logs; it doesn't create local log files that need to be shipped."
+                "explanation": "For an AWS Lambda function to send its logs to Amazon CloudWatch Logs, the IAM execution role associated with the Lambda function must have the necessary permissions (e.g., logs:CreateLogGroup, logs:CreateLogStream, and logs:PutLogEvents). If these permissions are missing, the Lambda function will execute but will not be able to publish its logs to CloudWatch Logs.",
+                "whyOthersWrong": "A: Lambda functions generally have logging enabled by default...\nC: Even if a Lambda function raises an exception early, the runtime environment often attempts to log the error...\nD: AWS Lambda integrates directly with CloudWatch Logs. It doesn't create local log files..."
             },
             {
-                "question": "A CloudWatch alarm for the 'mem_used_percent' metric from an EC2 instance is stuck in the INSUFFICIENT_DATA state. The CloudWatch agent is installed and running, but the metric is not available in CloudWatch. How can this be resolved?",
-                "options": {
-                    "A": "Enable CloudWatch detailed monitoring for the EC2 instance.",
-                    "B": "Create an IAM instance profile with CloudWatch permissions and attach it to the EC2 instance.",
-                    "C": "Migrate the EC2 instance into a private subnet.",
-                    "D": "Create an IAM user with access keys and update the agent configuration file to use them."
-                },
+                "question": "A company observes that a newly created Amazon CloudWatch alarm is not transitioning out of the INSUFFICIENT_DATA state. The alarm was created to track the mem_used_percent metric from an Amazon EC2 instance... A review of the EC2 instance shows that the unified CloudWatch agent is installed and is running. However, the metric is not available in CloudWatch... Which solution will meet these requirements?",
+                "options": { "A": "Enable CloudWatch detailed monitoring for the EC2 instance", "B": "Create an IAM instance profile that contains CloudWatch permissions. Add the instance profile to the EC2 instance", "C": "Migrate the EC2 instance into a private subnet", "D": "Create an IAM user that has an access key ID and a secret access key. Update the unified CloudWatch agent configuration file to use those credentials" },
                 "correctAnswer": "B",
-                "explanation": "The CloudWatch agent needs permissions to publish custom metrics (like mem_used_percent) to CloudWatch. The most secure and recommended AWS best practice is to grant these permissions to the EC2 instance by attaching an IAM instance profile with the required CloudWatch permissions (e.g., cloudwatch:PutMetricData).",
-                "whyOthersWrong": "A: Detailed monitoring applies to standard EC2 metrics, not custom metrics from the agent.\nC: Migrating the instance will not resolve a permissions issue.\nD: Using IAM user access keys on an instance is not a best practice; an IAM instance profile is preferred."
+                "explanation": "Even if the CloudWatch agent is installed and running, it needs the necessary permissions to publish custom metrics (like mem_used_percent) to CloudWatch. The most secure and recommended AWS best practice... is by attaching an IAM instance profile with the required CloudWatch permissions...",
+                "whyOthersWrong": "A: CloudWatch detailed monitoring applies to standard EC2 metrics... not custom metrics collected by the CloudWatch agent.\nC: Migrating the EC2 instance to a private subnet will not resolve the issue of the CloudWatch agent lacking permissions...\nD: While creating an IAM user with access keys could provide the necessary permissions, it is explicitly not an AWS best practice for EC2 instances."
             },
             {
-                "question": "A company is uploading important files to S3 and needs to be informed if an object is corrupted during the upload. What should a SysOps administrator do?",
-                "options": {
-                    "A": "Pass the Content-Disposition value as a request body.",
-                    "B": "Pass the Content-MD5 value as a request header.",
-                    "C": "Pass x-amz-object-lock-mode as a request header.",
-                    "D": "Pass x-amz-server-side-encryption-customer-algorithm as a request body."
-                },
+                "question": "A company is uploading important files as objects to Amazon S3. The company needs to be informed if an object is corrupted during the upload. What should a SysOps administrator do to meet this requirement?",
+                "options": { "A": "Pass the Content-Disposition value as a request body during the object upload", "B": "Pass the Content-MD5 value as a request header during the object upload", "C": "Pass x-amz-object-lock-mode as a request header during the object upload", "D": "Pass x-amz-server-side-encryption-customer-algorithm as a request body during the object upload" },
                 "correctAnswer": "B",
-                "explanation": "To verify the integrity of an object after uploading to S3, you can provide an MD5 digest of the object during the upload. If you calculate the MD5 digest, you can include it with the PUT command using the Content-MD5 header. S3 uses this value to check the object integrity and will return an error if the computed hash does not match.",
-                "whyOthersWrong": "A: Content-Disposition is for how a response should be displayed.\nC: x-amz-object-lock-mode is for data retention.\nD: This header is related to server-side encryption with customer-provided keys."
+                "explanation": "To verify the integrity of an object after uploading it to Amazon S3, you can provide an MD5 digest of the object during the upload. If you calculate the MD5 digest for your object, you can include it with the PUT command by using the Content-MD5 header. Amazon S3 uses this value to check the object integrity...",
+                "whyOthersWrong": "A: Content-Disposition is an HTTP header that provides information about how a response should be displayed...\nC: x-amz-object-lock-mode is an S3 Object Lock header used for data retention...\nD: x-amz-server-side-encryption-customer-algorithm is related to server-side encryption with customer-provided keys..."
             },
             {
-                "question": "A SysOps administrator needs a report showing bytes sent to and received from each target group member for an ALB. Which two steps should be taken?",
-                "options": {
-                    "A": "Enable access logging for the ALB and save logs to an S3 bucket.",
-                    "B": "Install the CloudWatch agent on the instances in the target group.",
-                    "C": "Use Amazon Athena to query the ALB logs, grouping by the 'target_port' field.",
-                    "D": "Use Amazon Athena to query the ALB logs, grouping by the 'client_port' field.",
-                    "E": "Create a CloudWatch dashboard showing the 'ProcessedBytes' metric for the ALB."
-                },
+                "question": "A SysOps administrator needs to create a report that shows how many bytes are sent to and received from each target group member for an Application Load Balancer (ALB). Which combination of steps should the SysOps administrator take to meet these requirements? (Choose two.)",
+                "options": { "A": "Enable access logging for the ALB. Save the logs to an Amazon S3 bucket.", "B": "Install the Amazon CloudWatch agent on the instances in the target group.", "C": "Use Amazon Athena to query the ALB logs. Query the table. Use the received_bytes and sent_bytes fields to calculate the total bytes grouped by the target port field.", "D": "Use Amazon Athena to query the ALB logs... grouped by the client port field.", "E": "Create an Amazon CloudWatch dashboard that shows the Sum statistic of the ProcessedBytes metric for the ALB." },
                 "correctAnswer": "A", // Merged A and C
-                "explanation": "First, enable Application Load Balancer (ALB) access logging to capture detailed information about requests, including 'sent_bytes' and 'received_bytes', and save these logs to an S3 bucket. Second, use Amazon Athena to run SQL queries on these logs in S3. You can aggregate the 'received_bytes' and 'sent_bytes' fields, grouping by the 'target_port' field to identify data transfer per target group member.",
-                "whyOthersWrong": "B: The CloudWatch agent collects instance-level metrics, not the detailed per-request data from the ALB.\nD: Grouping by 'client_port' would show data per client, not per target group member.\nE: The 'ProcessedBytes' metric is an aggregate for the entire ALB and does not break down data per target member."
+                "explanation": "Application Load Balancer (ALB) access logs capture detailed information about requests sent to your load balancer, including the sent_bytes and received_bytes... These logs can be configured to be delivered to an Amazon S3 bucket. Amazon Athena... makes it easy to analyze data directly in Amazon S3 using standard SQL... The ALB logs contain fields like received_bytes and sent_bytes which can be aggregated and grouped by the target_port field...",
+                "whyOthersWrong": "B: Installing the CloudWatch agent on target group instances would collect metrics from the instances... but would not provide the detailed per-request bytes...\nC: While Athena is the right tool, grouping by client_port would show data per client connection, not per target group member.\nE: The ProcessedBytes metric in CloudWatch for ALBs provides the total number of bytes processed by the load balancer. However, it does not break down the bytes sent to and received from each individual target group member..."
             },
             {
-                "question": "A company runs thousands of Amazon Linux 2 EC2 instances. A solution is needed to record commands and output from any user's interactive session, log the data durably, and provide automated notifications. What is the MOST operationally efficient solution?",
-                "options": {
-                    "A": "Configure command session logging on each EC2 instance and use the CloudWatch agent to send logs.",
-                    "B": "Require all users to use a central bastion host and configure the CloudWatch agent there.",
-                    "C": "Require all users to use AWS Systems Manager Session Manager, configured to stream session logs to CloudWatch Logs.",
-                    "D": "Require users to use AWS Systems Manager Run Command and configure the CloudWatch agent on each instance."
-                },
+                "question": "A company runs thousands of Amazon EC2 instances... A SysOps administrator must implement a solution to record commands and output from any user that needs an interactive session on one of the EC2 instances... Which solution will meet these requirements with the MOST operational efficiency?",
+                "options": { "A": "Configure command session logging on each EC2 instance...", "B": "Require all users to use a central bastion host...", "C": "Require all users to use AWS Systems Manager Session Manager when they need command line access to an EC2 instance. Configure Session Manager to stream session logs to Amazon CloudWatch Logs...", "D": "Configure command session logging on each EC2 instance. Require all users to use AWS Systems Manager Run Command documents..." },
                 "correctAnswer": "C",
-                "explanation": "For managing thousands of instances, AWS Systems Manager Session Manager is the most operationally efficient. It eliminates the need to open inbound ports, manage SSH keys, or create bastion hosts. Session Manager can record session data (commands and output) directly to CloudWatch Logs, where you can easily set up metric filters and alarms.",
-                "whyOthersWrong": "A: Configuring logging on thousands of individual instances is not efficient.\nB: A bastion host introduces a single point of failure and management complexity.\nD: Run Command is for non-interactive commands, but the requirement is for interactive sessions."
+                "explanation": "For managing thousands of instances with interactive sessions and robust logging, AWS Systems Manager Session Manager is the most operationally efficient solution. It eliminates the need to open inbound ports, manage SSH keys, or create bastion hosts. Session Manager allows you to record session data... directly to Amazon S3 or Amazon CloudWatch Logs.",
+                "whyOthersWrong": "A: Configuring command session logging on each EC2 instance manually... is not operationally efficient.\nB: Using a central bastion host introduces a single point of failure...\nD: AWS Systems Manager Run Command is for executing commands remotely and non-interactively. The requirement specifically mentions 'interactive sessions.'"
             },
             {
-                "question": "A company using AWS Control Tower needs to centralize identity management by federating IAM Identity Center with an external SAML 2.0 IdP. Which two prerequisites are required?",
-                "options": {
-                    "A": "A copy of the IAM Identity Center SAML metadata.",
-                    "B": "The IdP metadata including the public X.509 certificate.",
-                    "C": "The IP address of the IdP.",
-                    "D": "Root access to the management account.",
-                    "E": "Administrative permissions to the member accounts."
-                },
+                "question": "A company that uses AWS Organizations recently implemented AWS Control Tower. The company now needs to centralize identity management... Which prerequisites must the SysOps administrator have so that the SysOps administrator can connect to the external IdP? (Choose two.)",
+                "options": { "A": "A copy of the IAM Identity Center SAML metadata", "B": "The IdP metadata including the public X.509 certificate", "C": "The IP address of the IdP", "D": "Root access to the management account", "E": "Administrative permissions to the member accounts of the organization" },
                 "correctAnswer": "A", // Merged A and B
-                "explanation": "When setting up SAML federation, a two-way trust must be established. The external IdP needs a copy of the IAM Identity Center SAML metadata to know where to send assertions. Conversely, IAM Identity Center needs the IdP's metadata, including its public X.509 certificate, to trust and verify the digital signatures on the SAML assertions it receives.",
-                "whyOthersWrong": "C: SAML federation relies on metadata exchange, not direct IP address communication.\nD: Root access is not required for this configuration.\nE: Permissions are managed centrally by IAM Identity Center; direct admin permissions in each member account are not a prerequisite for setup."
+                "explanation": "When setting up SAML federation between AWS IAM Identity Center and an external IdP, a copy of the IAM Identity Center SAML metadata is required by your external identity provider... The IdP's metadata, including its public X.509 certificate, is essential for IAM Identity Center to trust the assertions sent from the external identity provider.",
+                "whyOthersWrong": "C: SAML federation relies on metadata exchange, not direct IP address communication...\nD: While AWS Control Tower and AWS Organizations management account have high privileges, root access is generally not required...\nE: IAM Identity Center centrally manages permissions for all accounts in an AWS Organization... Direct administrative permissions to each member account individually are not a prerequisite..."
             },
             {
-                "question": "A company moved its server infrastructure to EC2 and wants to use CloudWatch Logs to track instance logs. What should a SysOps administrator do in compliance with AWS best practices?",
-                "options": {
-                    "A": "Configure CloudWatch from the console and wait for AWS to automatically install agents.",
-                    "B": "Install and configure the CloudWatch agent on the instances and attach an IAM role with permissions to write logs.",
-                    "C": "Install and configure the CloudWatch agent and attach an IAM user with permissions.",
-                    "D": "Install and configure the CloudWatch agent and attach necessary security groups."
-                },
+                "question": "A company recently moved its server infrastructure to Amazon EC2 instances. The company wants to use Amazon CloudWatch Logs to track the instance logs. What should a SysOps administrator do to meet this requirement in compliance with AWS best practices?",
+                "options": { "A": "Configure CloudWatch from the AWS Management Console for the instances...", "B": "Install and configure the CloudWatch agent on the instances. Attach an IAM role to allow the instances to write logs to CloudWatch", "C": "Install and configure the CloudWatch agent on the instances. Attach an IAM user...", "D": "Install and configure the CloudWatch agent on the instances. Attach the necessary security groups..." },
                 "correctAnswer": "B",
-                "explanation": "To send instance logs to CloudWatch Logs, you must install and configure the CloudWatch agent on the EC2 instances. In line with AWS best practices, you should attach an IAM role to the EC2 instance. This role contains the necessary permissions for the agent to write logs to CloudWatch on behalf of the instance, which is more secure than managing static credentials.",
-                "whyOthersWrong": "A: AWS does not automatically install the agent.\nC: Using IAM users with access keys on EC2 instances is an anti-pattern.\nD: Security groups control network traffic, not the permissions required for the agent to write logs."
+                "explanation": "To send instance logs to CloudWatch Logs, you need to install and configure the CloudWatch agent on the EC2 instances. Crucially, in line with AWS best practices, you should attach an IAM role to the EC2 instance. This IAM role will contain the necessary permissions... that allow the agent to write logs to CloudWatch on behalf of the instance.",
+                "whyOthersWrong": "A: AWS does not automatically install and configure the CloudWatch agent...\nC: While attaching an IAM user with access keys could grant permissions, using IAM users with access keys directly on EC2 instances is generally considered an anti-pattern...\nD: Security groups control network traffic... not the authentication and authorization permissions required..."
             },
             {
-                "question": "A CloudFormation stack deletion gets stuck in DELETE_FAILED status because a security group it deployed is referenced by other security groups. How can the stack be deleted without affecting other applications in the MOST operationally efficient manner?",
-                "options": {
-                    "A": "Create a new security group, apply identical rules, replace all references, then delete the stack.",
-                    "B": "Create a CloudFormation change set to delete the security group.",
-                    "C": "Delete the stack again, specifying that the security group be retained.",
-                    "D": "Perform CloudFormation drift detection, then delete the stack."
-                },
+                "question": "A company uses AWS CloudFormation to deploy its infrastructure... A cloud operations engineer initiates CloudFormation stack deletion, and the stack gets stuck in DELETE_FAILED status... The security group is referenced by other security groups... Which solution will meet these requirements in the MOST operationally efficient manner?",
+                "options": { "A": "Create a new security group that has a different name. Apply identical rules...", "B": "Create a CloudFormation change set to delete the security group...", "C": "Delete the stack again. Specify that the security group be retained.", "D": "Perform CloudFormation drift detection. Delete the stack." },
                 "correctAnswer": "C",
-                "explanation": "When a stack deletion fails because a resource is still in use, the most efficient way to proceed is to delete the stack again and specifically tell CloudFormation to retain the problematic resource (the security group). This allows the stack deletion to complete, leaving the in-use security group untouched. It can be managed manually later.",
-                "whyOthersWrong": "A: This is a highly inefficient and manual process.\nB: A change set is for previewing changes, it does not resolve errors during deletion due to external dependencies.\nD: Drift detection identifies configuration changes, it is not a method for forcing stack deletion."
+                "explanation": "When a CloudFormation stack deletion fails because a resource is still in use... the most operationally efficient way to proceed... is to delete the stack again and specifically tell CloudFormation to retain the problematic resource (the security group). This allows the stack deletion to complete, and the security group, still being used by other applications, remains untouched.",
+                "whyOthersWrong": "A: This is a very inefficient and manual process...\nB: A CloudFormation change set allows you to preview how changes... might affect your running resources... It does not prevent errors during stack deletion...\nD: CloudFormation drift detection identifies stack resources whose actual configuration differs from their template... not a method for forcing stack deletion..."
             },
             {
-                "question": "A company needs to monitor its website's availability and receive an SNS notification if uptime decreases to less than 99%. The monitoring must provide an accurate view of the user experience. Which solution meets these requirements?",
-                "options": {
-                    "A": "Create a CloudWatch alarm based on the website's logs for HTTP 4xx and 5xx errors.",
-                    "B": "Create a CloudWatch alarm based on the website's published metrics using anomaly detection.",
-                    "C": "Create a CloudWatch Synthetics heartbeat monitoring canary and a CloudWatch alarm for the 'SuccessPercent' metric.",
-                    "D": "Create a CloudWatch Synthetics broken link checker canary and a CloudWatch alarm for the 'SuccessPercent' metric."
-                },
+                "question": "A company needs to monitor its website's availability to end users... provide an Amazon Simple Notification Service (Amazon SNS) notification if the website's uptime decreases to less than 99%... Which solution will meet these requirements?",
+                "options": { "A": "Create an Amazon CloudWatch alarm that is based on the website's logs...", "B": "Create an Amazon CloudWatch alarm that is based on the website's published metrics... based on anomaly detection.", "C": "Create an Amazon CloudWatch Synthetics heartbeat monitoring canary. Associate the canary with the website's URL... Create a CloudWatch alarm for the canary... if the value of the SuccessPercent metric is less than 99%.", "D": "Create an Amazon CloudWatch Synthetics broken link checker monitoring canary..." },
                 "correctAnswer": "C",
-                "explanation": "CloudWatch Synthetics allows you to create canaries, which are scripts that monitor your endpoints. A 'heartbeat monitoring canary' loads the specified URL and collects metrics like 'SuccessPercent'. This provides a proactive, external, and accurate view of the user experience. Setting a CloudWatch alarm on the 'SuccessPercent' metric to trigger below 99% directly addresses the requirement.",
-                "whyOthersWrong": "A: Monitoring logs is reactive and depends on actual user traffic.\nB: Anomaly detection is less specific for availability than a synthetic canary.\nD: A 'broken link checker' is not the primary tool for monitoring overall website uptime; a 'heartbeat monitor' is more suitable."
+                "explanation": "Amazon CloudWatch Synthetics allows you to create canaries, which are configurable scripts that run on a schedule to monitor your endpoints and APIs. A 'heartbeat monitoring canary' loads the specified URL and collects metrics like SuccessPercent. This provides a proactive, external, and accurate view of the user experience.",
+                "whyOthersWrong": "A: While monitoring HTTP 4xx/5xx errors from logs is valuable, it's a reactive measure that depends on actual user traffic...\nB: Anomaly detection on general website metrics might indicate an issue, but it doesn't directly measure uptime...\nD: A 'broken link checker' canary specifically looks for broken links on a webpage... it's not the primary or most direct way to monitor overall website uptime..."
             },
             {
-                "question": "A company uses a multi-account structure with a shared account for Route 53 and a development account for applications. A SysOps administrator needs a new SSL/TLS certificate for an application in the development account. What must the administrator do?",
-                "options": {
-                    "A": "Create a new KMS key in the shared account.",
-                    "B": "Request a new certificate using ACM from the shared account.",
-                    "C": "Request a new certificate using ACM from the development account and use Route 53 from the shared account to create validation records.",
-                    "D": "Create a new KMS key in the development account."
-                },
+                "question": "A company uses a multi-account structure in the AWS Cloud... A SysOps administrator needs to obtain a new SSL/TLS certificate for an application that is deployed in the development account. What must the SysOps administrator do to meet this requirement?",
+                "options": { "A": "Create a new AWS Key Management Service (AWS KMS) key in the shared account...", "B": "Request a new certificate by using AWS Certificate Manager (ACM) from the shared account...", "C": "Request a new certificate by using AWS Certificate Manager (ACM) from the development account. Use Route 53 from the shared account to create validation record sets...", "D": "Create a new AWS Key Management Service (AWS KMS) key in the development account..." },
                 "correctAnswer": "C",
-                "explanation": "ACM certificates are generally intended to be used within the AWS account where the application resides. Therefore, the certificate should be requested from the development account. However, since the Route 53 hosted zone for DNS validation is managed in the shared account, the administrator will need to use Route 53 in the shared account to create the necessary DNS validation records.",
-                "whyOthersWrong": "A & D: KMS keys are for encryption, not for requesting or validating SSL/TLS certificates.\nB: Requesting the certificate from the shared account is not the recommended practice if the application needing it is in a different account."
+                "explanation": "ACM certificates are region-specific and are generally intended to be used within the AWS account where the application requiring the certificate resides. Since the application is deployed in the development account, the certificate should be requested from that account. However, since the Route 53 hosted zone for DNS validation is managed in the shared account, the SysOps administrator will need to use Route 53 in the shared account to create the necessary DNS validation record sets.",
+                "whyOthersWrong": "A and D: KMS keys are used for encryption, not for requesting or validating SSL/TLS certificates...\nB: Requesting the certificate from the shared account would mean the certificate is in the shared account... not the recommended practice if the application needing the certificate is in a different account."
             },
             {
-                "question": "VPC flow logs are configured to be published to CloudWatch Logs, but no logs are appearing. What could be blocking the logs from being published?",
-                "options": {
-                    "A": "The IAM policy for the flow log's role is missing the 'logs:CreateLogGroup' permission.",
-                    "B": "The IAM policy for the flow log's role is missing the 'logs:CreateExportTask' permission.",
-                    "C": "The VPC is configured for IPv6 addresses.",
-                    "D": "The VPC is peered with another VPC in the AWS account."
-                },
+                "question": "A company's SysOps administrator is troubleshooting communication between the components of an application. The company configured VPC flow logs to be published to Amazon CloudWatch Logs. However, there are no logs in CloudWatch Logs. What could be blocking the VPC flow logs from being published to CloudWatch Logs?",
+                "options": { "A": "The IAM policy that is attached to the IAM role for the flow log is missing the logs:CreateLogGroup permission", "B": "The IAM policy that is attached to the IAM role for the flow log is missing the logs:CreateExportTask permission", "C": "The VPC is configured for IPv6 addresses", "D": "The VPC is peered with another VPC in the AWS account" },
                 "correctAnswer": "A",
-                "explanation": "To publish VPC flow logs to CloudWatch Logs, the associated IAM role must have permissions to create log groups, create log streams, and put log events. If the 'logs:CreateLogGroup' permission (or other necessary permissions) is missing, the flow logs service will not be able to create the required log group, and therefore, no logs will appear.",
-                "whyOthersWrong": "B: 'logs:CreateExportTask' is for exporting logs from CloudWatch, not publishing to it.\nC: VPC flow logs support both IPv4 and IPv6.\nD: VPC peering does not inherently block flow logs from being published."
+                "explanation": "To publish VPC flow logs to CloudWatch Logs, the IAM role associated with the flow log must have specific permissions... If the logs:CreateLogGroup permission... is missing from the IAM policy attached to the flow log's role, the flow logs will not be able to create the required log group in CloudWatch Logs, and therefore, no logs will appear.",
+                "whyOthersWrong": "B: logs:CreateExportTask is a permission related to exporting logs from CloudWatch Logs...\nC: VPC flow logs support both IPv4 and IPv6 traffic...\nD: VPC peering connections do not inherently block flow logs from being published."
             },
             {
                 "question": "Which of the following comes before Auto Scaling group creation?",
-                "options": {
-                    "A": "Creating the Auto Scaling launch configuration or launch template",
-                    "B": "Creating the Auto Scaling policy",
-                    "C": "Creating the Auto Scaling tags",
-                    "D": "Creating the Auto Scaling instance"
-                },
+                "options": { "A": "Creating the Auto Scaling launch config", "B": "Creating the Auto Scaling policy", "C": "Creating the Auto Scaling tags", "D": "Creating the Auto Scaling instance" },
                 "correctAnswer": "A",
-                "explanation": "Before you can create an Auto Scaling group, you must define a launch configuration or a launch template. This acts as a template for the EC2 instances that the Auto Scaling group will launch, specifying parameters like the AMI, instance type, key pair, and security groups.",
-                "whyOthersWrong": "B: Scaling policies are configured after the group is created.\nC: Tags are applied during or after the creation of the group.\nD: The Auto Scaling group itself creates the instances based on the launch configuration."
+                "explanation": "Before you can create an Auto Scaling group, you must define a launch configuration (or a launch template). The launch configuration acts as a template for the EC2 instances that the Auto Scaling group will launch. It specifies parameters such as the Amazon Machine Image (AMI), instance type, key pair, security groups, and user data.",
+                "whyOthersWrong": "B: Auto Scaling policies define how the Auto Scaling group scales in or out... These are configured after the Auto Scaling group has been created.\nC: Tags are metadata that you can add to your Auto Scaling groups... They are applied during or after the creation...\nD: The Auto Scaling group itself creates instances based on the launch configuration."
             },
             {
-                "question": "A company needs to enforce tagging requirements for DynamoDB tables and automatically remediate non-compliant tables. Which solution has the LEAST operational overhead?",
-                "options": {
-                    "A": "Create a custom Lambda function invoked by a scheduled EventBridge rule.",
-                    "B": "Create a custom Lambda function invoked by an AWS Config custom rule.",
-                    "C": "Use the 'required-tags' AWS Config managed rule and configure an automatic remediation action using an SSM Automation runbook.",
-                    "D": "Create an EventBridge managed rule to evaluate tables and run an SSM Automation runbook."
-                },
+                "question": "A company needs to enforce tagging requirements for Amazon DynamoDB tables in its AWS accounts. A SysOps administrator must implement a solution to identify and remediate all DynamoDB tables that do not have the appropriate tags. Which solution will meet these requirements with the LEAST operational overhead?",
+                "options": { "A": "Create a custom AWS Lambda function to evaluate and remediate all DynamoDB tables...", "B": "Create a custom AWS Lambda function to evaluate and remediate... Create an AWS Config custom rule...", "C": "Use the required-tags AWS Config managed rule to evaluate all DynamoDB tables... Configure an automatic remediation action that uses an AWS Systems Manager Automation custom runbook.", "D": "Create an Amazon EventBridge managed rule to evaluate all DynamoDB tables..." },
                 "correctAnswer": "C",
-                "explanation": "AWS Config managed rules are pre-defined for simplifying compliance checking. The 'required-tags' rule checks for specified tags. AWS Config can then be configured with automatic remediation actions, triggering an SSM Automation document to fix non-compliant resources. This approach has the least overhead as it leverages existing managed services and rules.",
-                "whyOthersWrong": "A & B: Using a custom Lambda requires writing and maintaining custom code for logic that is already provided by AWS Config managed rules.\nD: AWS Config is specifically designed for evaluating resource configurations against desired states, making it more suitable than EventBridge for this scenario."
+                "explanation": "AWS Config managed rules are pre-defined rules provided by AWS that simplify compliance checking. The required-tags managed rule specifically checks if resources have the tags you specify. AWS Config can then be configured with automatic remediation actions...",
+                "whyOthersWrong": "A and B: While a custom Lambda function can perform evaluation and remediation, using AWS Config managed rules... significantly reduces the operational overhead...\nD: Amazon EventBridge is an event bus... but AWS Config is specifically designed for evaluating resource configurations..."
             },
             {
-                "question": "A SysOps administrator sets up a public static website on S3 using default settings. After uploading index.html and error.html, navigating to the URL gives a 403 Forbidden error. How can this be resolved?",
-                "options": {
-                    "A": "Create a Route 53 DNS entry pointing to the S3 bucket.",
-                    "B": "Turn off Block Public Access settings and create a bucket policy to allow GetObject access.",
-                    "C": "Edit the permissions on the index.html and error.html files for read access.",
-                    "D": "Turn off Block Public Access settings and create a bucket policy to allow PutObject access."
-                },
+                "question": "A company is using Amazon S3 to set up a temporary static website that is public... When the SysOps administrator navigates to the website URL the SysOps administrator receives an HTTP Status Code 403: Forbidden (Access Denied) error. What should the SysOps administrator do to resolve this error?",
+                "options": { "A": "Create an Amazon Route 53 DNS entry Point the entry to the S3 bucket.", "B": "Edit the S3 bucket permissions by turning off Block Public Access settings. Create a bucket policy to allow GetObject access on the S3 bucket.", "C": "Edit the permissions on the index.html and error.html files for read access.", "D": "Edit the S3 bucket permissions by turning off Block Public Access settings. Create a bucket policy to allow PutObject access on the S3 bucket." },
                 "correctAnswer": "B",
-                "explanation": "By default, new S3 buckets have 'Block Public Access' settings enabled. For a public static website, you must first disable these settings. After that, you need to create a bucket policy that explicitly grants 's3:GetObject' permission to anonymous users for the objects in the bucket, allowing web browsers to retrieve the files.",
-                "whyOthersWrong": "A: DNS is for custom domain mapping and doesn't resolve an Access Denied error from the S3 URL itself.\nC: The primary issue is typically the bucket-level public access blocking, not object-level ACLs.\nD: 'PutObject' access would allow users to upload objects, which is a security risk and not needed for reading."
+                "explanation": "By default, new S3 buckets have 'Block Public Access' settings enabled... For a public static website, you must first disable these 'Block Public Access' settings. After that, you need to create a bucket policy that explicitly grants s3:GetObject permission to anonymous users...",
+                "whyOthersWrong": "A: Creating a Route 53 DNS entry is for mapping a custom domain name... it doesn't resolve an Access Denied error...\nC: While object-level ACLs could grant read access, managing permissions via a bucket policy... is generally more scalable...\nD: Granting s3:PutObject access would allow users to upload objects, which is a significant security risk..."
             },
             {
-                "question": "A company needs a solution to create a high-priority ticket in an internal ticketing tool when its Site-to-Site VPN tunnel goes down. A CloudWatch alarm is already configured to monitor the tunnel status. Which solution will meet this requirement?",
-                "options": {
-                    "A": "Create an SNS topic for the alarm and subscribe the ticketing tool's endpoint to it.",
-                    "B": "Create an SQS queue as the target for the alarm.",
-                    "C": "Create a Lambda function and configure the CloudWatch alarm to invoke it to create tickets.",
-                    "D": "Create an EventBridge rule that monitors the VPN tunnel directly."
-                },
+                "question": "A company has internal hybrid applications... A SysOps administrator must implement a solution that creates a high-priority ticket in an internal ticketing tool when the VPN tunnel is down. Which solution will meet this requirement?",
+                "options": { "A": "Create an Amazon Simple Notification Service (Amazon SNS) topic for the CloudWatch alarm. Subscribe the ticketing tool's endpoint to the SNS topic.", "B": "Create an Amazon Simple Queue Service (Amazon SQS) queue as the target for the CloudWatch alarm...", "C": "Create an AWS Lambda function. Configure the CloudWatch alarm to directly invoke the Lambda function to create individual tickets in the ticketing tool.", "D": "Create an Amazon EventBridge rule that monitors the VPN tunnel directly..." },
                 "correctAnswer": "C",
-                "explanation": "A Lambda function provides the most flexibility for integrating with a custom internal ticketing tool. When a CloudWatch alarm enters an ALARM state, it can directly invoke a Lambda function. This function can then contain custom logic to parse the alarm and make an API call to the internal ticketing tool to create a ticket.",
-                "whyOthersWrong": "A & D: Direct subscription of a ticketing tool's endpoint to SNS or EventBridge implies native integration, which is often not the case for internal tools without custom processing logic, which Lambda provides.\nB: SQS is a queue; a separate process would still be needed to poll the queue and create the ticket."
+                "explanation": "An AWS Lambda function provides the most flexibility and operational efficiency for integrating with a custom internal ticketing tool. When a CloudWatch alarm enters an ALARM state, it can directly invoke a Lambda function. This Lambda function can then contain custom logic to parse the alarm notification and make an API call...",
+                "whyOthersWrong": "A: While SNS can send notifications, the direct subscription of a 'ticketing tool's endpoint'... usually implies that the ticketing tool can natively consume SNS messages...\nB: SQS is a messaging queue... a separate process or function would still be needed to poll the queue...\nD: While EventBridge can monitor AWS events... configuring the ticketing tool's endpoint directly as a target is similar to SNS..."
             },
             {
-                "question": "A CloudFormation stack creation failed, and before the problem could be identified, the stack and its resources were deleted. For future deployments, the SysOps administrator must preserve any resources that CloudFormation successfully created. What should be done?",
-                "options": {
-                    "A": "Set the value of the 'DisableRollback' parameter to False during stack creation.",
-                    "B": "Set the value of the 'OnFailure' parameter to DO_NOTHING during stack creation.",
-                    "C": "Specify a rollback configuration with a trigger of DO_NOTHING.",
-                    "D": "Set the value of the 'OnFailure' parameter to ROLLBACK."
-                },
+                "question": "A SysOps administrator is troubleshooting an AWS CloudFormation stack creation that failed. Before the SysOps administrator can identify the problem, the stack and its resources are deleted. For future deployments, the SysOps administrator must preserve any resources that CloudFormation successfully created. What should the SysOps administrator do to meet this requirement?",
+                "options": { "A": "Set the value of the DisableRollback parameter to False during stack creation", "B": "Set the value of the OnFailure parameter to DO_NOTHING during stack creation", "C": "Specify a rollback configuration that has a rollback trigger of DO_NOTHING during stack creation", "D": "Set the value of the OnFailure parameter to ROLLBACK during stack creation" },
                 "correctAnswer": "B",
-                "explanation": "When creating a stack, setting the 'OnFailure' parameter to DO_NOTHING specifies that if the operation fails, CloudFormation should stop and leave the successfully provisioned resources in their current state, rather than rolling back. This allows the administrator to inspect the resources and troubleshoot the issue.",
-                "whyOthersWrong": "A & D: The default behavior is to roll back on failure. Setting 'DisableRollback' to False or 'OnFailure' to ROLLBACK enables this default behavior, which is the opposite of the requirement.\nC: Rollback triggers are for initiating a rollback based on CloudWatch alarms, not controlling the overall failure behavior."
+                "explanation": "When creating or updating a CloudFormation stack, you can use the OnFailure parameter... Setting this parameter to DO_NOTHING specifies that if a stack operation fails, CloudFormation should stop the operation and leave the successfully provisioned resources in their current state...",
+                "whyOthersWrong": "A: DisableRollback set to False... means that rollback is enabled...\nC: Rollback triggers are used to initiate a rollback based on specific CloudWatch alarms...\nD: Setting OnFailure to ROLLBACK... is the opposite of the requirement."
             },
             {
-                "question": "A company needs to install specific software on EC2 instances when they launch. Which solution will meet this requirement?",
-                "options": {
-                    "A": "Configure AWS Systems Manager State Manager associations to bootstrap the instances.",
-                    "B": "Use the CloudWatch agent to detect InstanceStart events and inject the software.",
-                    "C": "Use Amazon Inspector to detect launch events and install software via lifecycle hooks.",
-                    "D": "Use AWS Security Hub remediation actions to install the software at launch."
-                },
+                "question": "A company needs to implement a solution to install specific software on Amazon EC2 instances when the instances launch. Which solution will meet this requirement?",
+                "options": { "A": "Configure AWS Systems Manager State Manager associations to bootstrap the EC2 instances with the required software at launch.", "B": "Use the Amazon CloudWatch agent to detect EC2 InstanceStart events and to inject the required software...", "C": "Use Amazon Inspector to detect EC2 launch events. Configure Amazon Inspector to install the required software...", "D": "Use AWS Security Hub remediation actions to install the required software at launch." },
                 "correctAnswer": "A",
-                "explanation": "AWS Systems Manager State Manager allows you to define and maintain a consistent state for your EC2 instances. You can create 'associations' that specify a desired configuration, such as installing specific software. These associations can be applied to instances at launch, making it an effective and automated way to bootstrap them.",
-                "whyOthersWrong": "B: The CloudWatch agent is for collecting metrics and logs, not for deploying software.\nC: Amazon Inspector is a security assessment service, it does not install software.\nD: Security Hub remediation actions are for addressing security findings, not for initial software installation."
+                "explanation": "AWS Systems Manager State Manager allows you to define and maintain a consistent state for your EC2 instances. You can create 'associations' that specify a desired configuration, such as installing specific software. These associations can be applied to instances at launch...",
+                "whyOthersWrong": "B: The CloudWatch agent is for collecting metrics and logs, not for deploying or installing software...\nC: Amazon Inspector is a security assessment service... It assesses vulnerabilities... but does not install software...\nD: AWS Security Hub is a service that provides a comprehensive view of your security state... While it offers remediation actions, these are typically for addressing security findings..."
             },
             {
-                "question": "A company is using CloudWatch alarms with threshold definitions to monitor EKS workloads, but this is not helping the cluster operate more efficiently. A solution is needed that identifies anomalies and generates recommendations. Which solution will meet these requirements?",
-                "options": {
-                    "A": "Use CloudWatch anomaly detection to identify anomalies and provide recommendations.",
-                    "B": "Use CloudWatch Container Insights with Amazon DevOps Guru to identify anomalies and provide recommendations.",
-                    "C": "Use CloudWatch Container Insights to identify anomalies and provide recommendations.",
-                    "D": "Use CloudWatch anomaly detection with CloudWatch Container Insights."
-                },
+                "question": "A company is using Amazon CloudWatch alarms to monitor Amazon Elastic Kubernetes Service (Amazon EKS) workloads... A SysOps administrator must implement a solution that identifies anomalies and generates recommendations for how to address the anomalies. Which solution will meet these requirements?",
+                "options": { "A": "Use CloudWatch anomaly detection to identify anomalies and provide recommendations", "B": "Use CloudWatch Container Insights with Amazon DevOps Guru to identify anomalies and provide recommendations.", "C": "Use CloudWatch Container Insights to identify anomalies and provide recommendations", "D": "Use CloudWatch anomaly detection with CloudWatch Container Insights to identify anomalies and provide recommendations" },
                 "correctAnswer": "B",
-                "explanation": "This combines two powerful services. CloudWatch Container Insights collects detailed metrics and logs from EKS. Amazon DevOps Guru is a machine learning-powered service that automatically identifies operational issues from this data and recommends specific actions to resolve them. This combination directly meets the requirement for both anomaly detection and recommendation generation.",
-                "whyOthersWrong": "A, C, D: While CloudWatch anomaly detection and Container Insights can help identify issues, they do not inherently generate actionable recommendations for how to address them; that is the key feature provided by DevOps Guru."
+                "explanation": "This option combines two powerful services for EKS monitoring and anomaly detection. CloudWatch Container Insights is specifically designed to collect... metrics and logs from containerized applications... Amazon DevOps Guru is a machine learning-powered service that automatically identifies operational issues and recommends specific actions...",
+                "whyOthersWrong": "A: While CloudWatch anomaly detection can identify deviations... it doesn't generate recommendations...\nC: CloudWatch Container Insights provides detailed metrics... However, it does not inherently generate recommendations...\nD: While using CloudWatch anomaly detection with Container Insights would certainly help identify anomalies, it still lacks the automatic recommendation generation feature that DevOps Guru provides."
             },
             {
-                "question": "A team accidentally deletes several production DynamoDB tables by running a Lambda function. A solution is needed to minimize the chance of accidental deletions and minimize data loss. Which two steps will meet these requirements?",
-                "options": {
-                    "A": "Enable termination protection for the CloudFormation stacks that deploy the tables.",
-                    "B": "Enable deletion protection for the DynamoDB tables.",
-                    "C": "Enable point-in-time recovery (PITR) for the DynamoDB tables.",
-                    "D": "Schedule daily backups of the DynamoDB tables.",
-                    "E": "Export the DynamoDB tables to S3 every day."
-                },
+                "question": "A company has an application that uses Amazon DynamoDB tables... The team accidentally deletes several production DynamoDB tables by running an AWS Lambda function... A SysOps administrator must implement a solution that minimizes the chance of accidental deletions of tables. The solution also must minimize data loss... Which combination of steps will meet these requirements? (Choose two.)",
+                "options": { "A": "Enable termination protection for the CloudFormation stacks that deploy the DynamoDB tables.", "B": "Enable deletion protection for the DynamoDB tables.", "C": "Enable point-in-time recovery for the DynamoDB tables. Restore the tables if they are accidentally deleted.", "D": "Schedule daily backups of the DynamoDB tables...", "E": "Export the DynamoDB tables to Amazon S3 every day..." },
                 "correctAnswer": "B", // Merged B and C
-                "explanation": "DynamoDB's native 'deletion protection' feature prevents a table from being accidentally deleted, directly minimizing the chance of deletion. To minimize data loss, Point-in-Time Recovery (PITR) provides continuous backups, enabling you to restore a table to any point in time during the last 35 days with second-level granularity.",
-                "whyOthersWrong": "A: CloudFormation termination protection doesn't prevent a direct API call from deleting the table.\nD & E: Daily backups or exports are inferior to PITR, which offers continuous backups and more granular recovery, thus better minimizing data loss."
+                "explanation": "DynamoDB now offers a 'deletion protection' feature. When enabled for a table, it prevents the table from being accidentally deleted... Amazon DynamoDB Point-in-Time Recovery (PITR) provides continuous backups of your table data. It enables you to restore a table to any point in time during the last 35 days...",
+                "whyOthersWrong": "A: While CloudFormation stack termination protection prevents the stack from being deleted, it does not directly prevent a DeleteTable API call made outside of CloudFormation...\nC: Daily backups would reduce data loss, but PITR (Option C) offers continuous backups... making it superior...\nE: Exporting to S3 and then importing back is a more manual and time-consuming process..."
             },
             {
-                "question": "Developers are launching EC2 instances from unapproved AMIs. A solution is needed to automatically terminate any instances launched from unapproved AMIs. Which solution will meet this requirement?",
-                "options": {
-                    "A": "Use an AWS Config managed rule to check AMIs and an SSM Automation runbook to terminate noncompliant instances.",
-                    "B": "Store approved AMIs in DynamoDB and use EC2 launch templates to check against the list.",
-                    "C": "Create a CloudWatch alarm based on a metric that shows the AMI of running instances.",
-                    "D": "Create a custom Amazon Inspector finding and use a Lambda function to terminate instances."
-                },
+                "question": "A company has a list of pre-approved Amazon Machine Images (AMIs) for developers to use... However, developers are still launching EC2 instances from unapproved AMIs. A SysOps administrator must implement a solution that automatically terminates any instances that are launched from unapproved AMIs. Which solution will meet this requirement?",
+                "options": { "A": "Set up an AWS Config managed rule to check if instances are running from AMIs that are on the list of pre-approved AMIs. Configure an automatic remediation action so that an AWS Systems Manager Automation runbook terminates any instances that are noncompliant with the rule.", "B": "Store the list of pre-approved AMIs in an Amazon DynamoDB global table... Create Regional EC2 launch templates...", "C": "Select the Amazon CloudWatch metric that shows all running instances and the AMIs... Create a CloudWatch alarm...", "D": "Create a custom Amazon Inspector finding... Create an AWS Lambda function that terminates instances..." },
                 "correctAnswer": "A",
-                "explanation": "AWS Config is designed for continuously monitoring and enforcing compliance. You can use a rule to evaluate whether EC2 instances are launched from approved AMIs. If an instance is non-compliant, Config can trigger an automatic remediation action using an SSM Automation document to terminate the instance. This provides an automated and scalable solution.",
-                "whyOthersWrong": "B: Launch Templates don't have built-in logic to check AMIs against a list and terminate instances.\nC: There isn't a direct CloudWatch metric that exposes the AMI ID for easy alarming.\nD: This is a more complex approach than the native compliance and remediation capabilities offered by AWS Config."
+                "explanation": "AWS Config is designed for continuously monitoring and enforcing compliance of AWS resources. You can use an AWS Config managed rule... to evaluate whether EC2 instances are launched from approved AMIs. If an instance is found to be non-compliant, AWS Config can trigger an automatic remediation action using an AWS Systems Manager Automation document.",
+                "whyOthersWrong": "B: EC2 Launch Templates do not have built-in logic to 'check AMIs against a list and terminate instances.'\nC: CloudWatch metrics primarily provide numerical data... there isn't a direct CloudWatch metric that exposes the AMI ID...\nD: While Amazon Inspector can identify security findings... this is a more complex and less direct approach than the native compliance and remediation capabilities offered by AWS Config."
             },
             {
-                "question": "An application uses IAM access keys that must be rotated every 30 days. An automated solution is needed to find and rotate keys that are at least 30 days old. What is the MOST operationally efficient solution?",
-                "options": {
-                    "A": "Use an AWS Config rule to identify old keys and invoke an SSM Automation runbook to rotate them.",
-                    "B": "Use AWS Trusted Advisor to identify old keys and invoke an SSM Automation runbook.",
-                    "C": "Create a script on an EC2 instance scheduled with cron to check and rotate keys.",
-                    "D": "Create a Lambda function invoked by an EventBridge rule every time a new key is created."
-                },
+                "question": "A company is using AWS to deploy a critical application on a fleet of Amazon EC2 instances... the company needs to rotate IAM access keys that the application uses. A SysOps administrator must implement an automated solution that finds and rotates IAM access keys that are at least 30 days old... Which solution will meet this requirement with the MOST operational efficiency?",
+                "options": { "A": "Use an AWS Config rule to identify IAM access keys that are at least 30 days old. Configure AWS Config to invoke an AWS Systems Manager Automation runbook to rotate the identified IAM access keys.", "B": "Use AWS Trusted Advisor to identify IAM access keys that are at least 30 days old...", "C": "Create a script that checks the age of IAM access keys... Launch an EC2 instance. Schedule the script to run as a cron expression...", "D": "Create an AWS Lambda function that checks the age of IAM access keys... Use an Amazon EventBridge rule to invoke the Lambda function every time a new IAM access key is created." },
                 "correctAnswer": "A",
-                "explanation": "AWS Config can continuously monitor resource configurations and evaluate the age of IAM access keys against a rule. When a key is identified as non-compliant (older than 30 days), Config can trigger an automatic remediation action, such as an SSM Automation runbook designed to perform the rotation. This is highly automated and uses managed services efficiently.",
-                "whyOthersWrong": "B: Trusted Advisor is an advisory service and is not designed to automatically invoke remediation actions.\nC: This solution has operational overhead from managing an EC2 instance just to run a cron job.\nD: The trigger needs to be time-based (e.g., daily), not based on new key creation."
+                "explanation": "AWS Config provides continuous monitoring of resource configurations and can be used to evaluate the age of IAM access keys against a specified rule... When a key is identified as non-compliant... AWS Config can trigger an automatic remediation action. This remediation action can be an AWS Systems Manager Automation runbook...",
+                "whyOthersWrong": "B: While AWS Trusted Advisor has a check for 'IAM Access Key Usage,'... It is not designed to automatically invoke remediation actions...\nC: This solution involves provisioning and managing an EC2 instance just to run a cron job, which introduces operational overhead...\nD: An EventBridge rule invoked every time a new IAM access key is created would not directly address the need to find and rotate keys that are at least 30 days old..."
             },
             {
-                "question": "The Statement element of an AWS IAM policy contains an array of individual statements. Each individual statement is a(n) ________ in braces {}.",
-                "options": {
-                    "A": "JSON object",
-                    "B": "AJAX call",
-                    "C": "JavaScript function",
-                    "D": "jQuery selector"
-                },
+                "question": "The Statement element, of an AWS IAM policy, contains an array of individual statements. Each individual statement is a(n) ________ in braces {).",
+                "options": { "A": "JSON", "B": "AJAX", "C": "JavaScript", "D": "jQuery" },
                 "correctAnswer": "A",
-                "explanation": "AWS IAM policies are written in JSON (JavaScript Object Notation). A Statement element within a policy contains an array of individual policy statements, and each individual statement is a JSON object enclosed in braces {}."
+                "explanation": "AWS IAM policies are written in JSON (JavaScript Object Notation). A Statement element within an IAM policy contains an array of individual policy statements, and each individual statement is a JSON block enclosed in braces {}."
             },
             {
-                "question": "A single-page web application uses CloudFront for static content and an EKS cluster for APIs. Users report the website is not operational, even when the index page is reachable and the EKS cluster is healthy. How can this be detected before users report it?",
-                "options": {
-                    "A": "Create a CloudWatch Synthetics heartbeat monitor canary that points to the website's FQDN.",
-                    "B": "Create a CloudWatch Synthetics API canary that monitors the EKS API endpoints.",
-                    "C": "Create a CloudWatch RUM app monitor to collect performance telemetry and JavaScript errors.",
-                    "D": "Create a CloudWatch RUM app monitor that uses the API endpoints from the EKS cluster."
-                },
+                "question": "A company runs a single-page web application on AWS... Users sometimes report that the website is not operational, even when monitoring shows that the index page is reachable and that the EKS cluster is healthy. A SysOps administrator must implement additional monitoring that can detect when the website is not operational before users report the problem. Which solution will meet these requirements?",
+                "options": { "A": "Create an Amazon CloudWatch Synthetics heartbeat monitor canary that points to the fully qualified domain name (FQDN) of the website.", "B": "Create an Amazon CloudWatch Synthetics API canary that monitors the availability of API endpoints from the EKS cluster.", "C": "Create an Amazon CloudWatch RUM app monitor that points to the fully qualified domain name (FQDN) of the website...", "D": "Create an Amazon CloudWatch RUM app monitor that uses the API endpoints from the EKS cluster." },
                 "correctAnswer": "A",
-                "explanation": "The problem suggests an issue with the end-to-end user experience. A CloudWatch Synthetics 'heartbeat monitor canary' simulates a user's interaction by loading the website URL. This tests the entire front-end stack (CloudFront, S3, initial page load) and provides a proactive, external check of the website's availability from an end-user perspective.",
-                "whyOthersWrong": "B: An API canary only tests the EKS endpoints, which are stated to be healthy.\nC & D: CloudWatch RUM (Real User Monitoring) collects data from actual user sessions and is reactive to traffic, whereas the requirement is to detect the problem proactively before users report it."
+                "explanation": "The key problem is that 'the website is not operational, even when monitoring shows that the index page is reachable and that the EKS cluster is healthy.' This suggests an issue with the end-to-end user experience... An Amazon CloudWatch Synthetics 'heartbeat monitor canary' simulates a user's interaction by loading the specified website URL (FQDN).",
+                "whyOthersWrong": "B: An API canary would only test the EKS API endpoints... the problem statement indicates the EKS cluster is healthy...\nC and D: Amazon CloudWatch RUM (Real User Monitoring) collects data from actual user sessions... the requirement is to 'detect when the website is not operational before users report the problem.' Synthetics (canaries) are proactive..."
             },
             {
-                "question": "Which of the following is NOT considered an inline threat protection technology that intercepts and analyzes traffic before forwarding it?",
-                "options": {
-                    "A": "Intrusion prevention systems (IPS)",
-                    "B": "Third-party firewall devices installed on Amazon EC2 instances",
-                    "C": "Data loss prevention (DLP) gateways",
-                    "D": "Security groups and Network ACLs"
-                },
+                "question": "You have been asked to design a layered security solution for protecting your organization's network infrastructure... Which of the following is NOT considered an inline threat protection technology?",
+                "options": { "A": "Intrusion prevention systems", "B": "Third-party firewall devices installed on Amazon EC2 instances", "C": "Data loss management gateways", "D": "Augmented security groups with Network ACLs" },
                 "correctAnswer": "D",
-                "explanation": "Security Groups and Network ACLs are fundamental network controls in AWS, but they operate as packet filters that allow or deny traffic based on rules (IP, port, protocol). They do not perform deep packet inspection or active analysis to detect and prevent complex threats in an 'inline' fashion like an IPS or a virtual firewall appliance.",
-                "whyOthersWrong": "A, B, C: These are all examples of inline threat protection. IPS actively monitors for malicious behavior, virtual firewalls perform deep packet inspection, and DLP gateways inspect for sensitive data."
+                "explanation": "Inline threat protection technologies intercept and analyze traffic before forwarding it, actively blocking or preventing threats. Security Groups and Network ACLs... operate as stateless (NACLs) or stateful (Security Groups) packet filters that allow or deny traffic based on rules... They do not perform deep packet inspection or active analysis...",
+                "whyOthersWrong": "A, B, and C are all examples of inline threat protection technologies."
             },
             {
                 "question": "Is it possible to protect the connections between your application servers and your MySQL instances using SSL encryption?",
-                "options": {
-                    "A": "Yes, but only in certain regions.",
-                    "B": "Yes",
-                    "C": "No",
-                    "D": "Yes, but only in a VPC."
-                },
+                "options": { "A": "Yes, it is possible but only in certain regions.", "B": "Yes", "C": "No", "D": "Yes, it is possible but only in VPC." },
                 "correctAnswer": "B",
-                "explanation": "Yes, it is definitely possible to protect connections between application servers and MySQL instances using SSL/TLS encryption. This is a standard security practice for database connections. AWS database services like Amazon RDS for MySQL strongly support and recommend SSL/TLS for secure communication, and it is not limited to specific regions or only within a VPC."
+                "explanation": "Yes, it is definitely possible to protect connections between application servers and your MySQL instances using SSL (now commonly referred to as TLS/SSL) encryption. This is a standard security practice for database connections... AWS database services like Amazon RDS for MySQL strongly support and recommend SSL/TLS for secure communication."
             }
         ];
 
