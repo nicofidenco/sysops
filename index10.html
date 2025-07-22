@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AWS SysOps Administrator - Practice Quiz</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Roboto', sans-serif;
+        }
+        .explanation-content {
+            transition: max-height 0.5s ease-in-out, opacity 0.5s ease-in-out;
+            max-height: 0;
+            opacity: 0;
+            overflow: hidden;
+        }
+        .explanation-content.show {
+            max-height: 1500px; /* Increased for potentially long explanations */
+            opacity: 1;
+        }
+        .option-btn {
+            transition: background-color 0.3s, border-color 0.3s, color 0.3s;
+        }
+        .correct {
+            background-color: #10B981 !important;
+            border-color: #059669 !important;
+            color: white !important;
+        }
+        .incorrect {
+            background-color: #EF4444 !important;
+            border-color: #DC2626 !important;
+            color: white !important;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 text-gray-800">
+
+    <div class="container mx-auto p-4 sm:p-6 lg:p-8 max-w-4xl">
+
+        <header class="bg-white shadow-md rounded-lg p-4 mb-6 flex justify-between items-center flex-wrap gap-4">
+            <div>
+                <h1 class="text-xl sm:text-2xl font-bold text-gray-700">AWS SysOps Practice Quiz</h1>
+                <p id="score" class="text-lg font-semibold text-blue-600">Score: 0 / 0</p>
+            </div>
+            <div class="flex flex-col items-end gap-2">
+                 <div class="flex items-center space-x-2">
+                    <span id="timer" class="text-sm font-mono bg-gray-200 px-2 py-1 rounded">00:00:00</span>
+                    <button id="start-timer" class="text-xs bg-green-500 hover:bg-green-600 text-white font-bold py-1 px-2 rounded">Start</button>
+                    <button id="stop-timer" class="text-xs bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-1 px-2 rounded">Stop</button>
+                    <button id="reset-timer" class="text-xs bg-red-500 hover:bg-red-600 text-white font-bold py-1 px-2 rounded">Reset</button>
+                </div>
+                <button id="reset-quiz" class="text-xs bg-indigo-500 hover:bg-indigo-600 text-white font-bold py-1 px-2 rounded">Reset Quiz</button>
+            </div>
+        </header>
+
+        <main id="quiz-container" class="bg-white shadow-lg rounded-lg p-6 min-h-[400px]">
+            <!-- Quiz content will be injected here -->
+        </main>
+
+        <footer class="mt-6 flex justify-between items-center">
+            <button id="prev-btn" class="text-xs bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-1 px-3 rounded-lg disabled:opacity-50" disabled>Previous</button>
+            <div class="flex items-center">
+                <label for="question-select" class="text-sm mr-2">Go to:</label>
+                <select id="question-select" class="text-xs border border-gray-300 rounded-md p-1"></select>
+            </div>
+            <button id="next-btn" class="text-xs bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-1 px-3 rounded-lg">Next</button>
+        </footer>
+
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // --- DATA & STATE ---
+            let currentQuestionIndex = 0;
+            let timerInterval;
+            let timerSeconds = 0;
+
+            const quizContainer = document.getElementById('quiz-container');
+            const scoreEl = document.getElementById('score');
+            const prevBtn = document.getElementById('prev-btn');
+            const nextBtn = document.getElementById('next-btn');
+            const questionSelect = document.getElementById('question-select');
+            const resetQuizBtn = document.getElementById('reset-quiz');
+            
+            // Timer elements
+            const timerDisplay = document.getElementById('timer');
+            const startTimerBtn = document.getElementById('start-timer');
+            const stopTimerBtn = document.getElementById('stop-timer');
+            const resetTimerBtn = document.getElementById('reset-timer');
+
+            // --- STRUCTURED QUESTIONS ARRAY ---
+           const questions = [
+  {
+    "number": "Question 1:",
+    "title": "EC2 Connectivity Timeout",
+    "scenario": "A SysOps administrator launches a new Amazon EC2 Linux instance into a public subnet. The instance is running, and the administrator has its public IP address. However, every attempt to connect remotely (e.g., via SSH) results in a connection timeout error.",
+    "questionText": "Which action will allow the SysOps administrator to remotely connect to the instance?",
+    "isMultiChoice": false,
+    "options": [
+      { "letter": "A", "text": "Add a route table entry in the public subnet for the SysOps administrator's IP address." },
+      { "letter": "B", "text": "Add an outbound network ACL rule to allow TCP port 22 for the SysOps administrator's IP address." },
+      { "letter": "C", "text": "Modify the instance security group to allow inbound SSH traffic from the SysOps administrator's IP address." },
+      { "letter": "D", "text": "Modify the instance security group to allow outbound SSH traffic to the SysOps administrator's IP address." }
+    ],
+    "correctAnswers": ["C"],
+    "explanation": "A connection timeout error is a classic sign that a firewall is blocking the traffic before it can reach the destination. In AWS, the primary firewall protecting an EC2 instance is its Security Group. By default, security groups deny all inbound traffic. To connect to a Linux instance using SSH, you must explicitly allow inbound traffic on TCP port 22. Modifying the security group to add an inbound rule for port 22 from the administrator's specific IP address is the correct and most secure solution.",
+    "wrongExplanation": "A: Route tables control the flow of traffic between subnets and to destinations outside the VPC (like the internet via an Internet Gateway). They do not filter traffic to a specific instance based on port or IP.\nB: The problem is with inbound traffic to the instance, not outbound. Also, NACLs are stateless and usually not the cause of initial connection issues.\nD: The connection attempt is an inbound request to the EC2 instance. An outbound rule controls traffic leaving the instance and is not relevant here."
+  },
+  {
+    "number": "Question 2:",
+    "title": "Application & Lambda Routing",
+    "scenario": "A company is transitioning a web application from Amazon EC2 instances to an AWS Lambda function. During the migration, they need to route traffic based on the URL path. For example, requests to /api/v1/... should go to the old EC2 instances, while requests to /api/v2/... should go to the new Lambda function.",
+    "questionText": "Which solution will meet these requirements?",
+    "isMultiChoice": false,
+    "options": [
+      { "letter": "A", "text": "Configure a Gateway Load Balancer." },
+      { "letter": "B", "text": "Configure a Network Load Balancer." },
+      { "letter": "C", "text": "Configure a Network Load Balancer with a regular expression." },
+      { "letter": "D", "text": "Configure an Application Load Balancer." }
+    ],
+    "correctAnswers": ["D"],
+    "explanation": "The key requirement is path-based routing, which is a feature of the application layer (Layer 7) of the OSI model. An Application Load Balancer (ALB) operates at Layer 7 and is designed for this exact purpose. It can inspect the content of the request, including the URL path, and route traffic to different target groups based on rules you define.",
+    "wrongExplanation": "A: Gateway Load Balancer is for third-party appliances like firewalls, not path-based routing.\nB & C: Network Load Balancers operate at Layer 4 and cannot inspect URL paths."
+  },
+  {
+    "number": "Question 3:",
+    "title": "Auto Scaling Cooldown Period",
+    "scenario": "A SysOps administrator has an Auto Scaling group using a simple scaling policy based on the RequestCountPerTarget metric. The administrator observes that the metric threshold was breached twice within a 180-second period. The Auto Scaling group is using default settings.",
+    "questionText": "How will the number of EC2 instances in this Auto Scaling group be affected in this scenario?",
+    "isMultiChoice": false,
+    "options": [
+      { "letter": "A", "text": "The Auto Scaling group will launch an additional EC2 instance every time the RequestCountPerTarget metric exceeds the predefined limit." },
+      { "letter": "B", "text": "The Auto Scaling group will launch one EC2 instance and will wait for the default cooldown period before launching another instance." },
+      { "letter": "C", "text": "The Auto Scaling group will send an alert to the ALB to rebalance the traffic and not add new EC2 instances until the load is normalized." },
+      { "letter": "D", "text": "The Auto Scaling group will try to distribute the traffic among all EC2 instances before launching another instance." }
+    ],
+    "correctAnswers": ["B"],
+    "explanation": "Simple scaling policies have a cooldown period to prevent the Auto Scaling group from launching or terminating additional instances before the effects of a previous scaling activity are visible. The default cooldown period is 300 seconds (5 minutes).",
+    "wrongExplanation": "A: Describes behavior without cooldown, which is incorrect.\nC: ALB automatically rebalances traffic; Auto Scaling does not send such alerts.\nD: The ALB handles traffic distribution; scaling is a separate function."
+  },
+  {
+    "number": "Question 4:",
+    "title": "Database Failover",
+    "scenario": "A company's application uses a single Amazon RDS DB instance. They are concerned about the lack of a failover solution and need to implement one that is automatic and does not lose any committed transactions in the event of a disaster.",
+    "questionText": "Which solution will meet these requirements?",
+    "isMultiChoice": false,
+    "options": [
+      { "letter": "A", "text": "Create an RDS read replica in the same AWS Region." },
+      { "letter": "B", "text": "Create an RDS read replica in a different AWS Region." },
+      { "letter": "C", "text": "Modify the DB instance to be a Multi-AZ deployment." },
+      { "letter": "D", "text": "Set up a CloudWatch alarm to restart the DB instance if memory utilization is high." }
+    ],
+    "correctAnswers": ["C"],
+    "explanation": "The requirements are for automatic failover and no data loss (zero RPO). The AWS feature designed specifically for this is an RDS Multi-AZ deployment. RDS provisions a synchronous standby replica in a different Availability Zone, ensuring no loss of committed data during failover.",
+    "wrongExplanation": "A & B: Read replicas are asynchronous and do not offer automatic failover or guaranteed data consistency.\nD: Monitoring memory utilization does not address failover or data durability."
+  },
+  {
+    "number": "Question 5:",
+    "title": "Centralized Policy Enforcement",
+    "scenario": "A company uses AWS Organizations with separate Organizational Units (OUs) for production and development. A corporate policy dictates that developers can only use a specific list of approved AWS services within the production account.",
+    "questionText": "What is the MOST operationally efficient solution to control the production account?",
+    "isMultiChoice": false,
+    "options": [
+      { "letter": "A", "text": "Create a customer managed policy in AWS Identity and Access Management (IAM). Apply the policy to all users within the production account." },
+      { "letter": "B", "text": "Create a job function policy in AWS Identity and Access Management (IAM). Apply the policy to all users within the production OU." },
+      { "letter": "C", "text": "Create a service control policy (SCP). Apply the SCP to the production OU." },
+      { "letter": "D", "text": "Create an IAM policy. Apply the policy in Amazon API Gateway to restrict the production account." }
+    ],
+    "correctAnswers": ["C"],
+    "explanation": "Service Control Policies (SCPs) are a feature of AWS Organizations that enforce permission boundaries across all accounts. Applying an SCP to the production OU ensures developers cannot access services beyond the approved list, regardless of individual IAM roles.",
+    "wrongExplanation": "A & B: Rely on individual user/role policies and are less reliable for organization-wide enforcement.\nD: API Gateway policies cannot enforce service-level access across accounts."
+  }
+];
+
+
+            // --- QUIZ LOGIC ---
+            function initializeQuiz() {
+                // Add userAnswers property to each question for state management
+                questions.forEach(q => q.userAnswers = []);
+                currentQuestionIndex = 0;
+                updateScore();
+                populateQuestionSelect();
+                displayQuestion(currentQuestionIndex);
+            }
+
+            function displayQuestion(index) {
+                currentQuestionIndex = index;
+                const question = questions[index];
+                quizContainer.innerHTML = '';
+
+                if (!question) {
+                    quizContainer.innerHTML = `<p class="text-center text-red-500">Error: Question not found.</p>`;
+                    return;
+                }
+
+                // Sanitize and format the question text to be displayed
+                const formattedQuestionText = question.questionText.replace(/\(Choose (two|three)\.\)/, '<span class="block text-sm text-gray-500 font-normal mt-1">($&.toUpperCase())</span>');
+
+                const questionEl = document.createElement('div');
+                questionEl.innerHTML = `
+                    <div class="mb-4">
+                        <p class="text-sm font-semibold text-gray-500">Question ${question.number} / ${questions.length}</p>
+                        <h2 class="text-xl font-bold mt-1">${question.title}</h2>
+                    </div>
+                    ${question.scenario ? `<div class="mb-4 p-4 bg-gray-50 rounded-md border border-gray-200"><h3 class="font-semibold mb-2">Scenario</h3><p class="text-gray-600 whitespace-pre-wrap">${question.scenario}</p></div>` : ''}
+                    <div class="mb-6"><p class="font-semibold whitespace-pre-wrap">${formattedQuestionText}</p></div>
+                    <div id="options-container" class="grid grid-cols-1 gap-3"></div>
+                    <div id="explanation-container" class="mt-6"></div>
+                `;
+                quizContainer.appendChild(questionEl);
+
+                const optionsContainer = document.getElementById('options-container');
+                const isAnswered = question.userAnswers.length > 0;
+
+                question.options.forEach(option => {
+                    const optionWrapper = document.createElement('div');
+                    optionWrapper.classList.add('flex', 'items-center');
+
+                    const inputType = question.isMultiChoice ? 'checkbox' : 'radio';
+                    const input = document.createElement('input');
+                    input.type = inputType;
+                    input.id = `q${question.number}_${option.letter}`;
+                    input.name = `q${question.number}_options`;
+                    input.value = option.letter;
+                    input.classList.add('hidden'); // Hide the actual radio/checkbox
+                    
+                    if (question.userAnswers.includes(option.letter)) {
+                        input.checked = true;
+                    }
+
+                    const label = document.createElement('label');
+                    label.htmlFor = `q${question.number}_${option.letter}`;
+                    label.classList.add('option-btn', 'w-full', 'text-left', 'p-4', 'border-2', 'rounded-lg', 'cursor-pointer');
+                    label.innerHTML = `<span class="font-bold mr-2">${option.letter}.</span> ${option.text}`;
+
+                    if (input.checked) {
+                         if (isAnswered) {
+                            if (question.correctAnswers.includes(option.letter)) {
+                                label.classList.add('correct');
+                            } else {
+                                label.classList.add('incorrect');
+                            }
+                        }
+                    }
+
+                    label.addEventListener('click', (e) => {
+                        e.preventDefault(); // Prevent default label behavior
+                        handleAnswerClick(option.letter);
+                    });
+
+                    optionWrapper.appendChild(input);
+                    optionWrapper.appendChild(label);
+                    optionsContainer.appendChild(optionWrapper);
+                });
+
+                if (isAnswered) {
+                    showExplanationButton();
+                }
+
+                updateNavigation();
+            }
+
+            function handleAnswerClick(selectedOptionLetter) {
+                const question = questions[currentQuestionIndex];
+
+                if (question.isMultiChoice) {
+                    const answerIndex = question.userAnswers.indexOf(selectedOptionLetter);
+                    if (answerIndex > -1) {
+                        question.userAnswers.splice(answerIndex, 1); // Deselect
+                    } else {
+                        question.userAnswers.push(selectedOptionLetter); // Select
+                    }
+                } else {
+                    // If it's single choice, just replace the answer
+                    question.userAnswers = [selectedOptionLetter];
+                }
+                
+                updateScore();
+                // We need to re-render the question to show the selection/feedback
+                displayQuestion(currentQuestionIndex);
+            }
+            
+            function showExplanationButton() {
+                const explanationContainer = document.getElementById('explanation-container');
+                if (explanationContainer.querySelector('.explanation-btn')) return;
+
+                const question = questions[currentQuestionIndex];
+                const button = document.createElement('button');
+                button.textContent = 'Show Explanation';
+                button.classList.add('explanation-btn', 'text-sm', 'bg-blue-500', 'hover:bg-blue-600', 'text-white', 'font-bold', 'py-2', 'px-4', 'rounded-lg');
+                button.addEventListener('click', () => toggleExplanation(question));
+                explanationContainer.appendChild(button);
+            }
+
+            function toggleExplanation(question) {
+                const explanationContainer = document.getElementById('explanation-container');
+                let contentDiv = explanationContainer.querySelector('.explanation-content');
+                
+                if (contentDiv) {
+                    contentDiv.classList.toggle('show');
+                } else {
+                    contentDiv = document.createElement('div');
+                    contentDiv.classList.add('explanation-content', 'mt-4', 'p-4', 'bg-gray-50', 'border', 'rounded-lg');
+                    
+                    let wrongExplanationHtml = question.wrongExplanation.replace(/\*\*(.*?)\*\*/g, '<strong class="text-red-600">$1</strong>');
+
+                    contentDiv.innerHTML = `
+                        <h4 class="font-bold text-lg mb-2 text-green-700">Explanation</h4>
+                        <p class="mb-4 whitespace-pre-wrap">${question.explanation}</p>
+                        ${question.wrongExplanation ? `<h4 class="font-bold text-lg mb-2 text-red-700">Why the others are wrong</h4><p class="whitespace-pre-wrap">${wrongExplanationHtml}</p>` : ''}
+                    `;
+                    explanationContainer.appendChild(contentDiv);
+                    // Use a timeout to allow the element to be added to the DOM before adding the 'show' class for the transition to work
+                    setTimeout(() => contentDiv.classList.add('show'), 10);
+                }
+            }
+
+            function updateScore() {
+                let correctCount = 0;
+                questions.forEach(q => {
+                    if (q.userAnswers.length > 0) {
+                        const sortedUserAnswers = [...q.userAnswers].sort();
+                        const sortedCorrectAnswers = [...q.correctAnswers].sort();
+                        if (JSON.stringify(sortedUserAnswers) === JSON.stringify(sortedCorrectAnswers)) {
+                            correctCount++;
+                        }
+                    }
+                });
+                scoreEl.textContent = `Score: ${correctCount} / ${questions.length}`;
+            }
+
+            function updateNavigation() {
+                prevBtn.disabled = currentQuestionIndex === 0;
+                nextBtn.disabled = currentQuestionIndex === questions.length - 1;
+                questionSelect.value = currentQuestionIndex;
+            }
+            
+            function populateQuestionSelect() {
+                questionSelect.innerHTML = '';
+                questions.forEach((q, index) => {
+                    const option = document.createElement('option');
+                    option.value = index;
+                    option.textContent = `Question ${q.number}`;
+                    questionSelect.appendChild(option);
+                });
+            }
+
+            function resetQuiz() {
+                questions.forEach(q => q.userAnswers = []);
+                currentQuestionIndex = 0;
+                updateScore();
+                displayQuestion(currentQuestionIndex);
+            }
+
+            // --- TIMER LOGIC ---
+            function formatTime(seconds) {
+                const h = Math.floor(seconds / 3600).toString().padStart(2, '0');
+                const m = Math.floor((seconds % 3600) / 60).toString().padStart(2, '0');
+                const s = (seconds % 60).toString().padStart(2, '0');
+                return `${h}:${m}:${s}`;
+            }
+
+            function startTimer() {
+                if (timerInterval) return;
+                timerInterval = setInterval(() => {
+                    timerSeconds++;
+                    timerDisplay.textContent = formatTime(timerSeconds);
+                }, 1000);
+            }
+
+            function stopTimer() {
+                clearInterval(timerInterval);
+                timerInterval = null;
+            }
+
+            function resetTimer() {
+                stopTimer();
+                timerSeconds = 0;
+                timerDisplay.textContent = formatTime(timerSeconds);
+            }
+
+            // --- EVENT LISTENERS ---
+            prevBtn.addEventListener('click', () => {
+                if (currentQuestionIndex > 0) {
+                    displayQuestion(currentQuestionIndex - 1);
+                }
+            });
+
+            nextBtn.addEventListener('click', () => {
+                if (currentQuestionIndex < questions.length - 1) {
+                    displayQuestion(currentQuestionIndex + 1);
+                }
+            });
+
+            questionSelect.addEventListener('change', (e) => {
+                displayQuestion(parseInt(e.target.value));
+            });
+
+            resetQuizBtn.addEventListener('click', resetQuiz);
+
+            startTimerBtn.addEventListener('click', startTimer);
+            stopTimerBtn.addEventListener('click', stopTimer);
+            resetTimerBtn.addEventListener('click', resetTimer);
+
+            // --- INITIALIZATION ---
+            initializeQuiz();
+        });
+    </script>
+</body>
+</html>
+
