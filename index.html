@@ -76,7 +76,7 @@
   <script src="sysops.json.js"></script>
     <script>
         // --- DATA SOURCE ---
-       // const main_title = "Aws Sysops training questions";
+        const main_title = "Aws Sysops training questions";
         
         // --- STATE MANAGEMENT ---
         let currentQuestionIndex = 0;
@@ -148,7 +148,7 @@
                     <p class="text-sm font-semibold text-blue-600">Question ${index + 1} of ${questions.length}</p>
                     <h2 class="text-xl font-bold mt-1">${question.title}</h2>
                 </div>
-                <p class="text-gray-600 italic mb-4">${question.scenario}</p>
+                <p class="text-gray-800 text-xl mb-4">${question.scenario}</p>
                 <p class="text-lg font-medium mb-4">${question.questionText} <span class="text-sm font-normal text-gray-500">${question.isMultiChoice ? choiceText : '(Choose one)'}</span></p>
                 <div class="options-grid grid grid-cols-1 gap-3 mb-4">
                     ${question.options.map(opt => `
