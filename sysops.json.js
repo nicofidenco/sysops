@@ -1,4 +1,5 @@
 // \[cite: [^\]]*\] [cite Start]
+const main_title = "AWS SysOps Practice Quiz";
 const questions = [
     {
         "number": 1,
