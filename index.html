@@ -267,6 +267,7 @@
         }
         
         function resetQuiz() {
+             deleteCookie('quizState'); // Clear the saved state
             currentQuestionIndex = 0;
             score = 0;
             userSelections = Array(questions.length).fill(null).map(() => []);
@@ -312,6 +313,61 @@
             const m = Math.floor((seconds % 3600) / 60).toString().padStart(2, '0');
             const s = (seconds % 60).toString().padStart(2, '0');
             return `${h}:${m}:${s}`;
+        }
+
+        // --- COOKIE HELPERS ---
+        function setCookie(name, value, days) {
+            let expires = "";
+            if (days) {
+                const date = new Date();
+                date.setTime(date.getTime() + (days * 24 * 60 * 60 * 1000));
+                expires = "; expires=" + date.toUTCString();
+            }
+            document.cookie = name + "=" + (JSON.stringify(value) || "") + expires + "; path=/";
+        }
+
+        function getCookie(name) {
+            const nameEQ = name + "=";
+            const ca = document.cookie.split(';');
+            for (let i = 0; i < ca.length; i++) {
+                let c = ca[i];
+                while (c.charAt(0) == ' ') c = c.substring(1, c.length);
+                if (c.indexOf(nameEQ) == 0) {
+                    try {
+                        return JSON.parse(c.substring(nameEQ.length, c.length));
+                    } catch (e) {
+                        return null;
+                    }
+                }
+            }
+            return null;
+        }
+
+        function deleteCookie(name) {
+            document.cookie = name + '=; Max-Age=-99999999;';
+        }
+
+        // --- STATE PERSISTENCE ---
+        function saveState() {
+            const state = {
+                currentQuestionIndex,
+                score,
+                userSelections,
+                answeredCorrectly,
+                totalSeconds
+            };
+            setCookie('quizState', state, 7); // Save state for 7 days
+        }
+
+        function loadState() {
+            const savedState = getCookie('quizState');
+            if (savedState) {
+                currentQuestionIndex = savedState.currentQuestionIndex || 0;
+                score = savedState.score || 0;
+                userSelections = savedState.userSelections || Array(questions.length).fill(null).map(() => []);
+                answeredCorrectly = savedState.answeredCorrectly || Array(questions.length).fill(false);
+                totalSeconds = savedState.totalSeconds || 0;
+            }
         }
 
     </script>
