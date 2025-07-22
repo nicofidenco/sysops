@@ -44,9 +44,9 @@
         <!-- Header: Title, Score, Timer, Reset -->
         <header class="bg-white p-4 rounded-lg shadow-md mb-6 sticky top-0 z-10">
             <div class="flex flex-wrap justify-between items-center gap-4">
-                <h1 id="main-title" class="text-xl md:text-3xl font-bold text-gray-700"></h1>
+                <h1 id="main-title" class="text-xl md:text-xl font-bold text-gray-700"></h1>
                 <div class="flex items-center gap-4">
-                    <div id="scoreboard" class="text-sm font-semibold bg-blue-100 text-blue-800 px-4 py-2 rounded-lg">Score: 0 / 0</div>
+                    <div id="scoreboard" class="text-sm font-semibold bg-blue-100 text-blue-800 px-1 py-2 rounded-lg">Score: 0 / 0</div>
                     <button id="reset-quiz-btn" class="bg-red-500 hover:bg-red-600 text-white font-bold py-1 px-2 rounded-lg transition-colors">Reset Quiz</button>
                 </div>
             </div>
@@ -217,7 +217,7 @@
             const choiceText = `(Choose ${question.correctAnswers.length})`;
 
            questionContainer.innerHTML = `
-                <p class="text-gray-800 text-xl mb-4">${question.scenario}</p>
+                <p class="text-gray-800 text-xl mb-4">${question.scenario}<br></p>
                 <p class="text-lg font-medium mb-4">${question.questionText} <span class="text-sm font-normal text-gray-500">${question.isMultiChoice ? choiceText : '(Choose one)'}</span></p>
                 <div class="options-grid grid grid-cols-1 gap-3 mb-4">
                     ${question.options.map(opt => `
