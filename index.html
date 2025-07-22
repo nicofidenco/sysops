@@ -209,6 +209,7 @@
             // Enable/disable confirm button
             const confirmBtn = document.querySelector(`#question-${index} .confirm-btn`);
             confirmBtn.disabled = userSelections[index].length === 0;
+            saveState();
         }
 
         function handleConfirm(event) {
